@@ -13,7 +13,7 @@ class SocketHandler {
 
   void initSocket() {
     if (socket == null) {
-      socket = IO.io('http://192.168.1.118:3000', <String, dynamic>{
+      socket = IO.io('http://192.168.1.239:3001', <String, dynamic>{
         'transports': ['websocket'],
         'autoConnect': true,
         'forceNew': true,

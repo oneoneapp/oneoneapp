@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class UserService {
-  static const String _baseUrl = 'http://192.168.1.118:3000';
+  static const String _baseUrl = 'http://192.168.1.239:3001';
   static const String _userRegisteredKey = 'user_registered';
   static const String _userDataKey = 'user_data';
 

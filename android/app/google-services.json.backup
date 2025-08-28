@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "615995801871",
+    "project_id": "one-one-40e5d",
+    "storage_bucket": "one-one-40e5d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:615995801871:android:4b4d694430ed92e16a3e7a",
+        "android_client_info": {
+          "package_name": "com.example.one_one"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "615995801871-4n108aka9no18cqq9o5trklup84k24b5.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAPDMh6yffgIkx2WcIoMjHrfP1-RJ8lKwY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "615995801871-4n108aka9no18cqq9o5trklup84k24b5.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "615995801871-i6mo2et5eqlvioqomptrdvq3399hegmq.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.tenTen"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
