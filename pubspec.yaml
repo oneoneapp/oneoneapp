@@ -33,12 +33,12 @@ dependencies:
   provider: ^6.0.3
   socket_io_client: ^2.0.0
   permission_handler: ^11.1.0
-  flutter_webrtc: ^0.9.18
+  flutter_webrtc: ^1.1.0
   shared_preferences: ^2.0.15
-  flutter_foreground_task: ^5.0.0
+  flutter_foreground_task: ^7.5.2
   firebase_core: ^2.24.2
   firebase_messaging: ^14.7.10
-  flutter_local_notifications: ^16.3.0
+  flutter_local_notifications: ^19.4.1
   firebase_auth: ^4.15.3
   google_sign_in: ^6.2.1
   image_picker: ^1.0.7
