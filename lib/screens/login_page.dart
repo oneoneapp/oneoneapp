@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -24,7 +25,13 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    scopes: [
+      'email',
+      'profile',
+    ],
+    // Remove serverClientId as it might be causing the type casting issue
+  );
   String? _fcmToken;
 
   @override
@@ -32,6 +39,17 @@ class _LoginPageState extends State<LoginPage> {
     super.initState();
     _initializeFirebase();
     _setupFCM();
+    _checkGoogleSignInConfiguration();
+  }
+
+  Future<void> _checkGoogleSignInConfiguration() async {
+    try {
+      // This will help verify if Google Sign-In is properly configured
+      final isAvailable = await _googleSignIn.isSignedIn();
+      print("Google Sign-In available: $isAvailable");
+    } catch (e) {
+      print("Google Sign-In configuration check failed: $e");
+    }
   }
 
   Future<void> _initializeFirebase() async {
@@ -64,25 +82,86 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<User?> _signInWithGoogle() async {
     try {
-      final account = await _googleSignIn.signIn();
-      if (account == null) return null;
+      print("Starting Google sign-in process...");
+      
+      // Sign out from previous sessions to avoid conflicts
+      await _googleSignIn.signOut();
+      await _auth.signOut();
+      
+      print("Initiating Google sign-in...");
+      final GoogleSignInAccount? account = await _googleSignIn.signIn();
+      if (account == null) {
+        print("User cancelled Google sign-in");
+        return null;
+      }
 
-      final auth = await account.authentication;
-      final credential = GoogleAuthProvider.credential(
+      print("Getting authentication details...");
+      final GoogleSignInAuthentication auth = await account.authentication;
+      
+      if (auth.accessToken == null || auth.idToken == null) {
+        print("Failed to get Google auth tokens");
+        print("Access token: ${auth.accessToken != null ? 'Present' : 'Missing'}");
+        print("ID token: ${auth.idToken != null ? 'Present' : 'Missing'}");
+        return null;
+      }
+      
+      print("Creating Firebase credential...");
+      final AuthCredential credential = GoogleAuthProvider.credential(
         accessToken: auth.accessToken,
         idToken: auth.idToken,
       );
 
-      final userCred = await _auth.signInWithCredential(credential);
-      final user = userCred.user;
+      print("Signing in with Firebase...");
+      final UserCredential userCred = await _auth.signInWithCredential(credential);
+      final User? user = userCred.user;
 
       if (user != null) {
-        print("Signed in as: ${user.displayName}, ${user.email}");
+        print("Successfully signed in as: ${user.displayName}, ${user.email}");
+        print("User UID: ${user.uid}");
+      } else {
+        print("Firebase sign-in returned null user");
       }
 
       return user;
-    } catch (e) {
-      print("Google sign-in failed: $e");
+    } on PlatformException catch (e) {
+      print("Platform exception during Google sign-in: ${e.code} - ${e.message}");
+      if (e.code == 'sign_in_failed') {
+        print("This is likely a configuration issue. Check SHA-1 fingerprints in Firebase Console.");
+      }
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Sign-in failed: ${e.message}'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 5),
+          ),
+        );
+      }
+      return null;
+    } catch (e, stackTrace) {
+      print("Google sign-in failed with error: $e");
+      print("Error type: ${e.runtimeType}");
+      print("Stack trace: $stackTrace");
+      
+      // Clean up any partial sign-in state
+      try {
+        await _googleSignIn.signOut();
+        await _auth.signOut();
+      } catch (cleanupError) {
+        print("Error during cleanup: $cleanupError");
+      }
+      
+      // Show user-friendly error message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Sign-in failed. Please try again.'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
       return null;
     }
   }
@@ -129,6 +208,10 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _handleLogin() async {
+    print("Starting Google Sign-In process...");
+    print("Package name: com.example.one_one");
+    print("Expected SHA-1: B6:05:F5:3B:6A:A1:E3:4E:03:DA:9F:C7:A8:44:DE:DB:5C:8C:83:A7");
+    
     final user = await _signInWithGoogle();
     if (!mounted || user == null) return;
 
@@ -143,6 +226,11 @@ class _LoginPageState extends State<LoginPage> {
         );
         break;
       case UserStatus.existsWithoutSetup:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => NameSetupPage()),
+        );
+        break;
       case UserStatus.newUser:
         Navigator.pushReplacement(
           context,
