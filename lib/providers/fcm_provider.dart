@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:one_one/firebase_options.dart';
@@ -16,7 +14,6 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 Future<void> connectToServer(RemoteMessage message) async {
   try {
-    
     print("Message: ${message.notification?.title}");
 
     if(message.notification?.title == "c") {
@@ -25,9 +22,7 @@ Future<void> connectToServer(RemoteMessage message) async {
       // await WalkieTalkieProvider().autoAcceptCall();
     }
     else{
-      await WalkieTalkieProvider();
       WalkieTalkieProvider().setupSocketListeners();
-    
     }
 
     print('Connected to server');

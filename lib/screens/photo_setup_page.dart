@@ -8,17 +8,17 @@ class ProfilePicSetupPage extends StatefulWidget {
   final String name;
   final DateTime dateOfBirth;
 
-  ProfilePicSetupPage({
+  const ProfilePicSetupPage({
+    super.key,
     required this.name,
     required this.dateOfBirth,
   });
 
   @override
-  _ProfilePicSetupPageState createState() => _ProfilePicSetupPageState();
+  State<ProfilePicSetupPage> createState() => _ProfilePicSetupPageState();
 }
 
-class _ProfilePicSetupPageState extends State<ProfilePicSetupPage>
-    with TickerProviderStateMixin {
+class _ProfilePicSetupPageState extends State<ProfilePicSetupPage> with TickerProviderStateMixin {
   File? _selectedImage;
   final ImagePicker _picker = ImagePicker();
   bool _isUploading = false;
@@ -68,7 +68,7 @@ class _ProfilePicSetupPageState extends State<ProfilePicSetupPage>
     ));
 
     _slideAnimation = Tween<Offset>(
-      begin: Offset(0, 0.3),
+      begin: const Offset(0, 0.3),
       end: Offset.zero,
     ).animate(CurvedAnimation(
       parent: _slideController,
@@ -133,21 +133,21 @@ class _ProfilePicSetupPageState extends State<ProfilePicSetupPage>
           backgroundColor: Colors.transparent,
           child: Container(
             decoration: BoxDecoration(
-              color: Color(0xFFFFFF00),
+              color: const Color(0xFFFFFF00),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(color: Colors.black, width: 2),
             ),
-            padding: EdgeInsets.all(24),
+            padding: const EdgeInsets.all(24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
+                const Icon(
                   Icons.error_outline,
                   size: 60,
                   color: Colors.black,
                 ),
-                SizedBox(height: 16),
-                Text(
+                const SizedBox(height: 16),
+                const Text(
                   'Error',
                   style: TextStyle(
                     fontSize: 24,
@@ -155,7 +155,7 @@ class _ProfilePicSetupPageState extends State<ProfilePicSetupPage>
                     color: Colors.black,
                   ),
                 ),
-                SizedBox(height: 12),
+                const SizedBox(height: 12),
                 Text(
                   message,
                   textAlign: TextAlign.center,
@@ -165,18 +165,18 @@ class _ProfilePicSetupPageState extends State<ProfilePicSetupPage>
                     height: 1.4,
                   ),
                 ),
-                SizedBox(height: 24),
+                const SizedBox(height: 24),
                 ElevatedButton(
                   onPressed: () => Navigator.of(context).pop(),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.black,
-                    foregroundColor: Color(0xFFFFFF00),
-                    padding: EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                    foregroundColor: const Color(0xFFFFFF00),
+                    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: Text('OK'),
+                  child: const Text('OK'),
                 ),
               ],
             ),
@@ -210,7 +210,7 @@ class _ProfilePicSetupPageState extends State<ProfilePicSetupPage>
                 child: child,
               );
             },
-            transitionDuration: Duration(milliseconds: 500),
+            transitionDuration: const Duration(milliseconds: 500),
           ),
           (route) => false, // Remove all previous routes
         );
@@ -226,15 +226,15 @@ class _ProfilePicSetupPageState extends State<ProfilePicSetupPage>
     }
   }
 
-  int _calculateAge(DateTime birthDate) {
-    DateTime today = DateTime.now();
-    int age = today.year - birthDate.year;
-    if (today.month < birthDate.month ||
-        (today.month == birthDate.month && today.day < birthDate.day)) {
-      age--;
-    }
-    return age;
-  }
+  // int _calculateAge(DateTime birthDate) {
+  //   DateTime today = DateTime.now();
+  //   int age = today.year - birthDate.year;
+  //   if (today.month < birthDate.month ||
+  //       (today.month == birthDate.month && today.day < birthDate.day)) {
+  //     age--;
+  //   }
+  //   return age;
+  // }
 
   void _onFinishPressed() async {
     await _buttonController.forward();
@@ -246,15 +246,15 @@ class _ProfilePicSetupPageState extends State<ProfilePicSetupPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFFFFF00),
+      backgroundColor: const Color(0xFFFFFF00),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.black),
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
           onPressed: _isUploading ? null : () => Navigator.pop(context),
         ),
-        title: Text(
+        title: const Text(
           'Step 3 of 3',
           style: TextStyle(
             color: Colors.black,
@@ -266,7 +266,7 @@ class _ProfilePicSetupPageState extends State<ProfilePicSetupPage>
       ),
       body: SafeArea(
         child: Padding(
-          padding: EdgeInsets.all(32.0),
+          padding: const EdgeInsets.all(32.0),
           child: FadeTransition(
             opacity: _fadeAnimation,
             child: SlideTransition(
@@ -295,10 +295,10 @@ class _ProfilePicSetupPageState extends State<ProfilePicSetupPage>
                     ),
                   ),
                   
-                  SizedBox(height: 40),
+                  const SizedBox(height: 40),
                   
                   // Welcome text
-                  Text(
+                  const Text(
                     'Add your photo',
                     style: TextStyle(
                       fontSize: 28,
@@ -308,7 +308,7 @@ class _ProfilePicSetupPageState extends State<ProfilePicSetupPage>
                     ),
                   ),
                   
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   
                   Text(
                     'Let others see who they\'re talking to',
@@ -319,7 +319,7 @@ class _ProfilePicSetupPageState extends State<ProfilePicSetupPage>
                     ),
                   ),
                   
-                  SizedBox(height: 50),
+                  const SizedBox(height: 50),
                   
                   // Profile picture selector
                   GestureDetector(
@@ -343,7 +343,7 @@ class _ProfilePicSetupPageState extends State<ProfilePicSetupPage>
                                 BoxShadow(
                                   color: Colors.black.withOpacity(0.2),
                                   blurRadius: 15,
-                                  offset: Offset(0, 8),
+                                  offset: const Offset(0, 8),
                                 ),
                               ],
                             ),
@@ -367,7 +367,7 @@ class _ProfilePicSetupPageState extends State<ProfilePicSetupPage>
                     ),
                   ),
                   
-                  SizedBox(height: 20),
+                  const SizedBox(height: 20),
                   
                   if (_selectedImage == null)
                     Text(
@@ -379,19 +379,19 @@ class _ProfilePicSetupPageState extends State<ProfilePicSetupPage>
                       ),
                     ),
                   
-                  SizedBox(height: 50),
+                  const SizedBox(height: 50),
                   
                   // Finish button
                   AnimatedBuilder(
                     animation: _buttonScaleAnimation,
-                    child: Container(
+                    child: SizedBox(
                       width: double.infinity,
                       height: 56,
                       child: ElevatedButton(
                         onPressed: _isUploading ? null : _onFinishPressed,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.black,
-                          foregroundColor: Color(0xFFFFFF00),
+                          foregroundColor: const Color(0xFFFFFF00),
                           elevation: 4,
                           shadowColor: Colors.black.withOpacity(0.3),
                           shape: RoundedRectangleBorder(
@@ -399,7 +399,7 @@ class _ProfilePicSetupPageState extends State<ProfilePicSetupPage>
                           ),
                         ),
                         child: _isUploading
-                            ? Row(
+                            ? const Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   SizedBox(
@@ -423,7 +423,7 @@ class _ProfilePicSetupPageState extends State<ProfilePicSetupPage>
                                   ),
                                 ],
                               )
-                            : Row(
+                            : const Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Text(
@@ -451,7 +451,7 @@ class _ProfilePicSetupPageState extends State<ProfilePicSetupPage>
                     },
                   ),
                   
-                  SizedBox(height: 20),
+                  const SizedBox(height: 20),
                   
                   // Skip option
                   if (!_isUploading)

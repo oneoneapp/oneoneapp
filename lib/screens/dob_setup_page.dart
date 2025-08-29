@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:one_one/screens/photo_setup_page.dart';
-import 'package:one_one/screens/profile_page.dart';
-
 
 class DOBSetupPage extends StatefulWidget {
   final String name;
-
-  DOBSetupPage({required this.name});
+  
+  const DOBSetupPage({
+    super.key,
+    required this.name
+  });
 
   @override
-  _DOBSetupPageState createState() => _DOBSetupPageState();
+  State<DOBSetupPage> createState() => _DOBSetupPageState();
 }
 
-class _DOBSetupPageState extends State<DOBSetupPage>
-    with TickerProviderStateMixin {
+class _DOBSetupPageState extends State<DOBSetupPage> with TickerProviderStateMixin {
   DateTime? _selectedDate;
   late AnimationController _fadeController;
   late AnimationController _slideController;

@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:one_one/screens/dob_setup_page.dart';
 
 class NameSetupPage extends StatefulWidget {
+  const NameSetupPage({super.key});
+
   @override
-  _NameSetupPageState createState() => _NameSetupPageState();
+  State<NameSetupPage> createState() => _NameSetupPageState();
 }
 
-class _NameSetupPageState extends State<NameSetupPage>
-    with TickerProviderStateMixin {
+class _NameSetupPageState extends State<NameSetupPage> with TickerProviderStateMixin {
   final TextEditingController _nameController = TextEditingController();
   late AnimationController _fadeController;
   late AnimationController _slideController;

@@ -1,5 +1,3 @@
-// lib/screens/walkie_talkie_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/walkie_talkie_provider.dart';

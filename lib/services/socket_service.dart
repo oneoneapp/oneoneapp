@@ -1,9 +1,8 @@
-import 'package:socket_io_client/socket_io_client.dart' as IO;
-import 'package:flutter/foundation.dart';
+import 'package:socket_io_client/socket_io_client.dart';
 
 class SocketHandler {
   static final SocketHandler _instance = SocketHandler._internal();
-  IO.Socket? socket;
+  Socket? socket;
   
   factory SocketHandler() {
     return _instance;
@@ -13,7 +12,7 @@ class SocketHandler {
 
   void initSocket() {
     if (socket == null) {
-      socket = IO.io('https://api.oneoneapp.in', <String, dynamic>{
+      socket = io('https://api.oneoneapp.in', <String, dynamic>{
         'transports': ['websocket'],
         'autoConnect': true,
         'forceNew': true,

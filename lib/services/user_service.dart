@@ -151,15 +151,15 @@ class UserService {
   }
 
   // Helper method to calculate age
-  static int _calculateAge(DateTime birthDate) {
-    DateTime today = DateTime.now();
-    int age = today.year - birthDate.year;
-    if (today.month < birthDate.month ||
-        (today.month == birthDate.month && today.day < birthDate.day)) {
-      age--;
-    }
-    return age;
-  }
+  // static int _calculateAge(DateTime birthDate) {
+  //   DateTime today = DateTime.now();
+  //   int age = today.year - birthDate.year;
+  //   if (today.month < birthDate.month ||
+  //       (today.month == birthDate.month && today.day < birthDate.day)) {
+  //     age--;
+  //   }
+  //   return age;
+  // }
 
   // Check if user exists and get their data
   static Future<Map<String, dynamic>?> getUserData() async {
