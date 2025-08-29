@@ -25,13 +25,7 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn(
-    scopes: [
-      'email',
-      'profile',
-    ],
-    // Remove serverClientId as it might be causing the type casting issue
-  );
+  final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
   String? _fcmToken;
 
   @override
@@ -45,7 +39,7 @@ class _LoginPageState extends State<LoginPage> {
   Future<void> _checkGoogleSignInConfiguration() async {
     try {
       // This will help verify if Google Sign-In is properly configured
-      final isAvailable = await _googleSignIn.isSignedIn();
+      final isAvailable = _googleSignIn.supportsAuthenticate();
       print("Google Sign-In available: $isAvailable");
     } catch (e) {
       print("Google Sign-In configuration check failed: $e");
@@ -54,6 +48,9 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> _initializeFirebase() async {
     await Firebase.initializeApp();
+    _googleSignIn.initialize(
+      clientId: '615995801871-ks4eoqr4cb9jkc2cr2ucfgv3at6pcdj1.apps.googleusercontent.com',
+    );
     FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   }
 
@@ -89,25 +86,19 @@ class _LoginPageState extends State<LoginPage> {
       await _auth.signOut();
       
       print("Initiating Google sign-in...");
-      final GoogleSignInAccount? account = await _googleSignIn.signIn();
-      if (account == null) {
-        print("User cancelled Google sign-in");
-        return null;
-      }
+      final GoogleSignInAccount account = await _googleSignIn.authenticate();
 
       print("Getting authentication details...");
-      final GoogleSignInAuthentication auth = await account.authentication;
-      
-      if (auth.accessToken == null || auth.idToken == null) {
-        print("Failed to get Google auth tokens");
-        print("Access token: ${auth.accessToken != null ? 'Present' : 'Missing'}");
+      final GoogleSignInAuthentication auth = account.authentication;
+
+      if (auth.idToken == null) {
+        print("Failed to get Google ID token");
         print("ID token: ${auth.idToken != null ? 'Present' : 'Missing'}");
         return null;
       }
-      
+
       print("Creating Firebase credential...");
       final AuthCredential credential = GoogleAuthProvider.credential(
-        accessToken: auth.accessToken,
         idToken: auth.idToken,
       );
 
