@@ -92,7 +92,7 @@ class _LoginPageState extends State<LoginPage> {
       final idToken = await user.getIdToken();
 
       final response = await http.post(
-        Uri.parse('http://192.168.1.118:3000/auth/signup'),
+        Uri.parse('https://api.oneoneapp.in/auth/signup'),
         headers: {
           'Content-Type': 'application/json',
           'token': idToken ?? '',
