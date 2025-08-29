@@ -1,6 +1,6 @@
 import 'dart:isolate';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
-import 'package:socket_io_client/socket_io_client.dart' as IO;
+// import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:one_one/services/socket_service.dart';
 
 @pragma('vm:entry-point')
@@ -20,7 +20,7 @@ class WalkieTalkieTaskHandler extends TaskHandler {
 
   @pragma('vm:entry-point')
   @override
-  Future<void> onEvent(DateTime timestamp, SendPort? sendPort) async {
+  void onRepeatEvent(DateTime timestamp, SendPort? sendPort) {
     // Check socket connection every interval
     if (socketHandler.socket?.disconnected == true) {
       print('Socket disconnected, attempting to reconnect...');
@@ -35,13 +35,5 @@ class WalkieTalkieTaskHandler extends TaskHandler {
   Future<void> onDestroy(DateTime timestamp, SendPort? sendPort) async {
     // Even when service is destroyed, try to maintain socket
     socketHandler.initSocket();
-  }
-
-  @pragma('vm:entry-point')
-  @override
-  void onRepeatEvent(DateTime timestamp, SendPort? sendPort) {
-    // Handle repeat events if needed
-    // This method is called repeatedly based on the interval set in NotificationOptions
-    print('Repeat event triggered at: $timestamp');
   }
 }
