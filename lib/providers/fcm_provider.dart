@@ -16,9 +16,14 @@ Future<void> connectToServer(RemoteMessage message) async {
   try {
     print("Message: ${message.notification?.title}");
 
-    if(message.notification?.title == "c") {
-      await WalkieTalkieProvider().startCall(message.notification?.body); 
-    }else if(message.notification?.title == "r") {
+    if (message.notification?.body == null) {
+      print('No notification payload found.');
+      return;
+    }
+
+    if (message.notification?.title == "c") {
+      await WalkieTalkieProvider().startCall(message.notification!.body!); 
+    } else if(message.notification?.title == "r") {
       // await WalkieTalkieProvider().autoAcceptCall();
     }
     else{

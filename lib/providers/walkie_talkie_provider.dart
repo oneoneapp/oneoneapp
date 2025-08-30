@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:socket_io_client/socket_io_client.dart' as IO;
+import 'package:socket_io_client/socket_io_client.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:one_one/services/socket_service.dart';
 
 class WalkieTalkieProvider extends ChangeNotifier {
-  late IO.Socket socket;
+  late Socket socket;
   final SocketHandler _socketHandler = SocketHandler();
 
   String userName = '';
@@ -168,7 +168,7 @@ class WalkieTalkieProvider extends ChangeNotifier {
     });
   }
 
-  Future<void> startCall(code) async {
+  Future<void> startCall(String code) async {
     await initializePeerConnection();
     final offer = await peerConnection!.createOffer();
     await peerConnection!.setLocalDescription(offer);
