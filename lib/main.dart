@@ -1,12 +1,11 @@
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:one_one/core/config/locator.dart';
 import 'package:one_one/core/theme/theme.dart';
 import 'package:one_one/screens/name_setup_page.dart';
 import 'package:one_one/screens/walkie_talkie_screen.dart';
 import 'package:one_one/services/user_service.dart';
 import 'package:provider/provider.dart';
-import 'package:one_one/providers/fcm_provider.dart';
 import 'package:one_one/providers/walkie_talkie_provider.dart';
 import 'package:one_one/screens/login_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -14,7 +13,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
-  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+  setupLocator();  
   runApp(
     MultiProvider(
       providers: [
@@ -36,7 +35,7 @@ class _WalkieTalkieAppState extends State<WalkieTalkieApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Profile Setup App',
+      title: 'OneOne',
       theme: Themes.darkTheme,
       home: StreamBuilder<User?>(
         stream: FirebaseAuth.instance.authStateChanges(),
