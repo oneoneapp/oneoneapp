@@ -2,25 +2,25 @@
 /// layout and design throughout the application.
 class Spacing {
   /// 4 pixels
-  static double s1 = 4;
+  static const double s1 = 4;
   /// 8 pixels
-  static double s2 = 8;
+  static const double s2 = 8;
   /// 12 pixels
-  static double s3 = 12;
+  static const double s3 = 12;
   /// 16 pixels
-  static double s4 = 16;
+  static const double s4 = 16;
   /// 20 pixels
-  static double s5 = 20;
+  static const double s5 = 20;
   /// 28 pixels
-  static double s6 = 28;
+  static const double s6 = 28;
   /// 40 pixels
-  static double s7 = 40;
+  static const double s7 = 40;
   /// 60 pixels
-  static double s8 = 60;
+  static const double s8 = 60;
   /// 100 pixels
-  static double s9 = 100;
+  static const double s9 = 100;
   /// 160 pixels
-  static double s10 = 160;
+  static const double s10 = 160;
   /// 240 pixels
-  static double s11 = 240;
+  static const double s11 = 240;
 }
