@@ -12,13 +12,16 @@ class SocketHandler {
 
   void initSocket() {
     if (socket == null) {
-      socket = io('https://api.oneoneapp.in', <String, dynamic>{
-        'transports': ['websocket'],
-        'autoConnect': true,
-        'forceNew': true,
-        'reconnection': true,
-        'reconnectionAttempts': 10000, // Increased reconnection attempts
-      });
+      socket = io(
+        'https://api.oneoneapp.in',
+        {
+          'transports': ['websocket'],
+          'autoConnect': true,
+          'forceNew': true,
+          'reconnection': true,
+          'reconnectionAttempts': 10000,
+        }
+      );
       socket!.connect();
     }
   }
