@@ -1,20 +1,7 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:http/http.dart' as http;
-import 'package:one_one/screens/name_setup_page.dart';
-import 'package:one_one/screens/walkie_talkie_screen.dart';
-import 'package:one_one/providers/fcm_provider.dart';
-
-enum UserStatus {
-  newUser,
-  existsWithoutSetup,
-  alreadyRegistered,
-}
+import 'package:go_router/go_router.dart';
+import 'package:one_one/core/config/locator.dart';
+import 'package:one_one/core/shared/spacing.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -24,210 +11,35 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
-  String? _fcmToken;
+  final AuthService authService = loc();
 
   @override
   void initState() {
     super.initState();
-    _initializeFirebase();
-    _setupFCM();
-    _checkGoogleSignInConfiguration();
   }
 
-  Future<void> _checkGoogleSignInConfiguration() async {
-    try {
-      // This will help verify if Google Sign-In is properly configured
-      final isAvailable = _googleSignIn.supportsAuthenticate();
-      print("Google Sign-In available: $isAvailable");
-    } catch (e) {
-      print("Google Sign-In configuration check failed: $e");
-    }
-  }
+  Future<void> _handleLogin(BuildContext context) async {    
+    final UserAuthStatus status = await authService.startAuthentication();
+    if (!context.mounted) return;
 
-  Future<void> _initializeFirebase() async {
-    await Firebase.initializeApp();
-    _googleSignIn.initialize(
-      clientId: '615995801871-ks4eoqr4cb9jkc2cr2ucfgv3at6pcdj1.apps.googleusercontent.com',
-    );
-    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-  }
-
-  Future<void> _setupFCM() async {
-    try {
-      await FirebaseMessaging.instance.requestPermission();
-      final token = await FirebaseMessaging.instance.getToken();
-      setState(() {
-        _fcmToken = token;
-      });
-      print("FCM Token: $_fcmToken");
-
-      FirebaseMessaging.onMessage.listen((message) async {
-        print("Foreground message: ${message.data}");
-        await connectToServer(message);
-      });
-
-      FirebaseMessaging.onMessageOpenedApp.listen((message) async {
-        print("Message opened from background");
-        await connectToServer(message);
-      });
-    } catch (e) {
-      print("Error setting up FCM: $e");
-    }
-  }
-
-  Future<User?> _signInWithGoogle() async {
-    try {
-      print("Starting Google sign-in process...");
-      
-      // Sign out from previous sessions to avoid conflicts
-      await _googleSignIn.signOut();
-      await _auth.signOut();
-      
-      print("Initiating Google sign-in...");
-      final GoogleSignInAccount account = await _googleSignIn.authenticate();
-
-      print("Getting authentication details...");
-      final GoogleSignInAuthentication auth = account.authentication;
-
-      if (auth.idToken == null) {
-        print("Failed to get Google ID token");
-        print("ID token: ${auth.idToken != null ? 'Present' : 'Missing'}");
-        return null;
-      }
-
-      print("Creating Firebase credential...");
-      final AuthCredential credential = GoogleAuthProvider.credential(
-        idToken: auth.idToken,
-      );
-
-      print("Signing in with Firebase...");
-      final UserCredential userCred = await _auth.signInWithCredential(credential);
-      final User? user = userCred.user;
-
-      if (user != null) {
-        print("Successfully signed in as: ${user.displayName}, ${user.email}");
-        print("User UID: ${user.uid}");
-      } else {
-        print("Firebase sign-in returned null user");
-      }
-
-      return user;
-    } on PlatformException catch (e) {
-      print("Platform exception during Google sign-in: ${e.code} - ${e.message}");
-      if (e.code == 'sign_in_failed') {
-        print("This is likely a configuration issue. Check SHA-1 fingerprints in Firebase Console.");
-      }
-      
-      if (mounted) {
+    switch (status) {
+      case UserAuthStatus.alreadyRegistered:
+        context.goNamed("home");
+        break;
+      case UserAuthStatus.existsWithoutSetup:
+        context.goNamed("setup");
+        break;
+      case UserAuthStatus.newUser:
+        context.goNamed("setup");
+        break;
+      case UserAuthStatus.error:
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Sign-in failed: ${e.message}'),
+            content: Text('Sign-in failed'),
             backgroundColor: Colors.red,
             duration: Duration(seconds: 5),
           ),
         );
-      }
-      return null;
-    } catch (e, stackTrace) {
-      print("Google sign-in failed with error: $e");
-      print("Error type: ${e.runtimeType}");
-      print("Stack trace: $stackTrace");
-      
-      // Clean up any partial sign-in state
-      try {
-        await _googleSignIn.signOut();
-        await _auth.signOut();
-      } catch (cleanupError) {
-        print("Error during cleanup: $cleanupError");
-      }
-      
-      // Show user-friendly error message
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Sign-in failed. Please try again.'),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 3),
-          ),
-        );
-      }
-      return null;
-    }
-  }
-
-  Future<UserStatus> _sendUserDataToBackend(User user) async {
-    try {
-      final idToken = await user.getIdToken();
-
-      final response = await http.post(
-        Uri.parse('https://api.oneoneapp.in/auth/signup'),
-        headers: {
-          'Content-Type': 'application/json',
-          'token': idToken ?? '',
-        },
-        body: jsonEncode({
-          'uid': user.uid,
-          'name': user.displayName,
-          'email': user.email,
-          'photoUrl': user.photoURL,
-          'fcmToken': _fcmToken,
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        print("User data sent successfully");
-        return UserStatus.newUser;
-      } else if (response.statusCode == 400) {
-        final body = jsonDecode(response.body);
-        if (body['user'] != null && body['user']['dob'] != null) {
-          print("User already registered");
-          return UserStatus.alreadyRegistered;
-        } else {
-          print("User exists without completing setup");
-          return UserStatus.existsWithoutSetup;
-        }
-      } else {
-        print("Unexpected status: ${response.statusCode}");
-        return UserStatus.newUser;
-      }
-    } catch (e) {
-      print("Error sending user data: $e");
-      return UserStatus.newUser;
-    }
-  }
-
-  Future<void> _handleLogin() async {
-    print("Starting Google Sign-In process...");
-    print("Package name: com.example.one_one");
-    print("Expected SHA-1: B6:05:F5:3B:6A:A1:E3:4E:03:DA:9F:C7:A8:44:DE:DB:5C:8C:83:A7");
-    
-    final user = await _signInWithGoogle();
-    if (!mounted || user == null) return;
-
-    final status = await _sendUserDataToBackend(user);
-    if (!mounted) return;
-
-    switch (status) {
-      case UserStatus.alreadyRegistered:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const WalkieTalkieScreen()),
-        );
-        break;
-      case UserStatus.existsWithoutSetup:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => NameSetupPage()),
-        );
-        break;
-      case UserStatus.newUser:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => NameSetupPage()),
-        );
-        break;
     }
   }
 
@@ -241,98 +53,127 @@ class _LoginPageState extends State<LoginPage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Logo
-              Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFFF00),
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Image.asset(
-                  'assets/icon/logo.png',
-                  fit: BoxFit.cover,
-                ),
+              _Logo(),
+              const SizedBox(height: Spacing.s6),
+              _WelcomeSection(),
+              const SizedBox(height: Spacing.s9),
+              _GoogleSignInBtn(
+                onTap: () => _handleLogin(context)
               ),
-
-              const SizedBox(height: 40),
-
-              const Text(
-                'Welcome',
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                ),
-              ),
-
-              const SizedBox(height: 8),
-
-              Text(
-                'Sign in to continue',
-                style: TextStyle(
-                  fontSize: 16,
-                  color: Colors.black.withOpacity(0.7),
-                ),
-              ),
-
-              const SizedBox(height: 60),
-
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: _handleLogin,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black,
-                    foregroundColor: const Color(0xFFFFFF00),
-                    elevation: 4,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        width: 24,
-                        height: 24,
-                        child: Image.asset('assets/icon/google.png'),
-                      ),
-                      const SizedBox(width: 16),
-                      const Text(
-                        'Sign in with Google',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 40),
-
-              Text(
-                'By signing in, you agree to our Terms of Service\nand Privacy Policy',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.black.withOpacity(0.6),
-                  height: 1.4,
-                ),
-              ),
+              const SizedBox(height: Spacing.s5),
+              _LegalSection(),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _Logo extends StatelessWidget {
+  const _Logo();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 120,
+      height: 120,
+      decoration: BoxDecoration(
+        color: ColorScheme.of(context).primary,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Image.asset(
+        'assets/icon/logo.png',
+        fit: BoxFit.cover,
+      ),
+    );
+  }
+}
+
+class _WelcomeSection extends StatelessWidget {
+  const _WelcomeSection();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          'Welcome',
+          style: TextTheme.of(context).displaySmall!.copyWith(
+            fontWeight: FontWeight.bold,
+            color: ColorScheme.of(context).surface,
+          ),
+        ),
+        Text(
+          'Sign in to continue',
+          style: TextTheme.of(context).headlineSmall!.copyWith(
+            fontSize: 16,
+            color: ColorScheme.of(context).surface.withValues(alpha: 0.7),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _GoogleSignInBtn extends StatelessWidget {
+  final VoidCallback? onTap;
+
+  const _GoogleSignInBtn({
+    required this.onTap
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 56,
+      child: ElevatedButton(
+        onPressed: onTap,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: ColorScheme.of(context).onPrimary,
+          foregroundColor: ColorScheme.of(context).primary,
+          elevation: 4,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: 24,
+              height: 24,
+              child: Image.asset('assets/icon/google.png'),
+            ),
+            const SizedBox(width: Spacing.s4),
+            const Text(
+              'Sign in with Google',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LegalSection extends StatelessWidget {
+  const _LegalSection();
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      'By signing in, you agree to our Terms of Service\nand Privacy Policy',
+      textAlign: TextAlign.center,
+      style: TextTheme.of(context).labelSmall!.copyWith(
+        color: Colors.black.withValues(alpha: 0.6),
       ),
     );
   }
