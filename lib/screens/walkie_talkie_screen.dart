@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:one_one/components/hold_btn.dart';
+import 'package:one_one/core/config/locator.dart';
 import 'package:one_one/core/shared/spacing.dart';
 import 'package:provider/provider.dart';
 import '../providers/walkie_talkie_provider.dart';
@@ -22,8 +23,14 @@ class _WalkieTalkieScreenState extends State<WalkieTalkieScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Walkie-Talkie App'),
+        title: const Text('OneOne'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () {
+              loc<AuthService>().signOut();
+            }
+          ),
           IconButton(
             icon: const Icon(Icons.info_outline),
             onPressed: () {
