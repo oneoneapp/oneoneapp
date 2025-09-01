@@ -52,7 +52,7 @@ class Themes {
   static TextTheme textTheme(ColorScheme scheme) {
     return TextTheme(
       // Splash / big branding
-      displayLarge: GoogleFonts.teko(
+      displayLarge: GoogleFonts.russoOne(
         fontSize: 56,
         fontWeight: FontWeight.w700,
         letterSpacing: 1.5,
@@ -60,7 +60,7 @@ class Themes {
       ),
 
       // Secondary big headings (intro screens / onboarding titles)
-      displayMedium: GoogleFonts.teko(
+      displayMedium: GoogleFonts.russoOne(
         fontSize: 48,
         fontWeight: FontWeight.w700,
         letterSpacing: 1.2,
@@ -68,7 +68,7 @@ class Themes {
       ),
 
       // Used in dialogs / large in-app headings
-      displaySmall: GoogleFonts.teko(
+      displaySmall: GoogleFonts.russoOne(
         fontSize: 40,
         fontWeight: FontWeight.w600,
         letterSpacing: 1.0,
@@ -76,15 +76,15 @@ class Themes {
       ),
 
       // Section titles, app bar titles
-      headlineLarge: GoogleFonts.teko(
+      headlineLarge: GoogleFonts.poppins(
         fontSize: 32,
-        fontWeight: FontWeight.w600,
+        fontWeight: FontWeight.w800,
         letterSpacing: 0.8,
         color: scheme.onSurface,
       ),
 
       // Sub-section headers
-      headlineMedium: GoogleFonts.teko(
+      headlineMedium: GoogleFonts.russoOne(
         fontSize: 28,
         fontWeight: FontWeight.w600,
         letterSpacing: 0.5,
@@ -92,7 +92,7 @@ class Themes {
       ),
 
       // Minor headings
-      headlineSmall: GoogleFonts.teko(
+      headlineSmall: GoogleFonts.russoOne(
         fontSize: 24,
         fontWeight: FontWeight.w500,
         color: scheme.onSurface,
@@ -143,7 +143,7 @@ class Themes {
       ),
 
       // Buttons / interactive labels
-      labelLarge: GoogleFonts.teko(
+      labelLarge: GoogleFonts.russoOne(
         fontSize: 16,
         fontWeight: FontWeight.w700,
         letterSpacing: 1.0,
