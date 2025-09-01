@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:http/http.dart' as http;
+import 'package:one_one/core/config/locator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -28,8 +28,8 @@ class UserService {
 
       final token = await user.getIdToken();
       
-      final response = await http.get(
-        Uri.parse('$_baseUrl/user/check'),
+      final response = await loc<ApiService>().get(
+        '$_baseUrl/user/check',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -37,7 +37,7 @@ class UserService {
       );
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        final data = response.data;
         bool isRegistered = data['isRegistered'] ?? false;
         
         if (isRegistered) {
@@ -120,13 +120,13 @@ class UserService {
         'email': user.email,
       };
 
-      final response = await http.post(
-        Uri.parse('$_baseUrl/user/register'),
+      final response = await loc<ApiService>().post(
+        '$_baseUrl/user/register',
+        body: userData,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
-        body: json.encode(userData),
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -143,11 +143,17 @@ class UserService {
     }
   }
 
+  static Future<void> updateUserData(Map<String, dynamic> updatedData) async {
+    await _storeUserRegistrationStatus(true);
+    await _storeUserData(updatedData);
+  }
+
   // Clear local user data (for logout or data reset)
   static Future<void> clearLocalUserData() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_userRegisteredKey);
-    await prefs.remove(_userDataKey);
+    await prefs.clear();
+    // await prefs.remove(_userRegisteredKey);
+    // await prefs.remove(_userDataKey);
   }
 
   // Helper method to calculate age
@@ -176,8 +182,8 @@ class UserService {
 
       final token = await user.getIdToken();
       
-      final response = await http.get(
-        Uri.parse('$_baseUrl/user/profile'),
+      final response = await loc<ApiService>().get(
+        '$_baseUrl/user/profile',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -185,7 +191,7 @@ class UserService {
       );
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        final data = response.data;
         
         // Store the data locally for future use
         await _storeUserData(data);
