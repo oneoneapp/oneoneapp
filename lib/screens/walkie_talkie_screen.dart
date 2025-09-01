@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:one_one/components/hold_btn.dart';
 import 'package:one_one/core/config/locator.dart';
 import 'package:one_one/core/shared/spacing.dart';
@@ -17,6 +18,40 @@ class _WalkieTalkieScreenState extends State<WalkieTalkieScreen> {
   final targetCodeController = TextEditingController();
   final messageController = TextEditingController();
 
+  Future<void> _logFirebaseIdToken() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final idToken = await user.getIdToken();
+        print('Firebase ID Token: $idToken');
+        
+        // Show success message to user
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Firebase ID Token logged to console'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        print('No authenticated user found');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No authenticated user found'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      print('Error getting Firebase ID Token: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error getting token: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<WalkieTalkieProvider>(context);
@@ -25,6 +60,12 @@ class _WalkieTalkieScreenState extends State<WalkieTalkieScreen> {
       appBar: AppBar(
         title: const Text('OneOne'),
         actions: [
+          // Debug button for Firebase ID Token
+          IconButton(
+            icon: const Icon(Icons.bug_report),
+            onPressed: _logFirebaseIdToken,
+            tooltip: 'Log Firebase ID Token',
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () {

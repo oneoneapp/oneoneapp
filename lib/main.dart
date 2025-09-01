@@ -5,10 +5,13 @@ import 'package:one_one/core/config/routing.dart';
 import 'package:one_one/core/theme/theme.dart';
 import 'package:provider/provider.dart';
 import 'package:one_one/providers/walkie_talkie_provider.dart';
+import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   setupLocator();
   runApp(
     OneOneApp()

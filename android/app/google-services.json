@@ -1,48 +1,48 @@
 {
   "project_info": {
-    "project_number": "615995801871",
-    "project_id": "one-one-40e5d",
-    "storage_bucket": "one-one-40e5d.firebasestorage.app"
+    "project_number": "372494251881",
+    "project_id": "oneoneapp-811dd",
+    "storage_bucket": "oneoneapp-811dd.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:615995801871:android:4b4d694430ed92e16a3e7a",
+        "mobilesdk_app_id": "1:372494251881:android:97392ae4e0bd9c20fbaff8",
         "android_client_info": {
-          "package_name": "com.example.one_one"
+          "package_name": "com.oneone.app"
         }
       },
       "oauth_client": [
         {
-          "client_id": "615995801871-ks4eoqr4cb9jkc2cr2ucfgv3at6pcdj1.apps.googleusercontent.com",
+          "client_id": "372494251881-dekm0ari0d01uvqm48fifam7f1pu6dne.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.example.one_one",
+            "package_name": "com.oneone.app",
             "certificate_hash": "b605f53b6aa1e34e03da9fc7a844dedb5c8c83a7"
           }
         },
         {
-          "client_id": "615995801871-4n108aka9no18cqq9o5trklup84k24b5.apps.googleusercontent.com",
+          "client_id": "372494251881-63ts8uujprqh5hqejlu00pi70kflo8oe.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyAPDMh6yffgIkx2WcIoMjHrfP1-RJ8lKwY"
+          "current_key": "AIzaSyA6zNNfKvlCm4wYwcXS5g8agEhHbCGeKpg"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "615995801871-4n108aka9no18cqq9o5trklup84k24b5.apps.googleusercontent.com",
+              "client_id": "372494251881-63ts8uujprqh5hqejlu00pi70kflo8oe.apps.googleusercontent.com",
               "client_type": 3
             },
             {
-              "client_id": "615995801871-i6mo2et5eqlvioqomptrdvq3399hegmq.apps.googleusercontent.com",
+              "client_id": "372494251881-qpsocin921gssr3fvnklgsu27ms92d6m.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "com.example.tenTen"
+                "bundle_id": "com.example.oneOne"
               }
             }
           ]

@@ -3,13 +3,13 @@ import 'package:talker_dio_logger/talker_dio_logger_interceptor.dart';
 import 'package:talker_dio_logger/talker_dio_logger_settings.dart';
 
 class ApiService {
-  final String baseUrl = 'https://api.oneoneapp.in/';
+  final String baseUrl = 'http://192.168.1.242:5050/';
   final Dio dio = Dio();
 
   void init() {
     dio.options.headers['Content-Type'] = 'application/json';
     dio.options.validateStatus = (status) {
-      return status != null && status >= 200 && status < 500;
+      return status != null && status >= 200 && status < 600;
     };
     dio.interceptors.add(
       TalkerDioLogger(

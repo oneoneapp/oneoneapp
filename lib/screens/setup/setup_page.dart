@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:one_one/core/config/routing.dart';
 import 'package:one_one/screens/setup/dob_setup.dart';
 import 'package:one_one/screens/setup/name_setup.dart';
 import 'package:one_one/screens/setup/profile_pic_setup.dart';
@@ -89,8 +90,12 @@ class _SetupPageState extends State<SetupPage> {
       }
 
       if (result == true) {
+        // Refresh the router to ensure it picks up the new user data
+        AppRouter.refreshRouter();
+        
         if (mounted) {
-          context.goNamed("home");
+          // Use context.go to navigate to home after successful setup
+          context.go("/");
         }
       } else {
         throw Exception('Failed to submit user data');

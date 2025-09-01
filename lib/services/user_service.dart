@@ -1,11 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:one_one/core/config/locator.dart';
+import 'package:one_one/core/config/routing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class UserService {
-  static const String _baseUrl = 'https://api.oneoneapp.in';
+  static const String _baseUrl = 'http://192.168.1.242:5050';
   static const String _userRegisteredKey = 'user_registered';
   static const String _userDataKey = 'user_data';
 
@@ -133,6 +134,10 @@ class UserService {
         // Store registration status and user data locally
         await _storeUserRegistrationStatus(true);
         await _storeUserData(userData);
+        
+        // Refresh the router to pick up the new user data
+        AppRouter.refreshRouter();
+        
         return true;
       } else {
         throw Exception('Failed to submit user data: ${response.statusCode}');
@@ -146,6 +151,9 @@ class UserService {
   static Future<void> updateUserData(Map<String, dynamic> updatedData) async {
     await _storeUserRegistrationStatus(true);
     await _storeUserData(updatedData);
+    
+    // Refresh the router to pick up the updated user data
+    AppRouter.refreshRouter();
   }
 
   // Clear local user data (for logout or data reset)
@@ -182,8 +190,9 @@ class UserService {
 
       final token = await user.getIdToken();
       
+      // Try the check endpoint first since profile endpoint returns 404
       final response = await loc<ApiService>().get(
-        '$_baseUrl/user/profile',
+        '$_baseUrl/user/check',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -193,11 +202,14 @@ class UserService {
       if (response.statusCode == 200) {
         final data = response.data;
         
-        // Store the data locally for future use
-        await _storeUserData(data);
-        await _storeUserRegistrationStatus(true);
-        
-        return data;
+        // If user data is available in the check response
+        if (data['userData'] != null) {
+          // Store the data locally for future use
+          await _storeUserData(data['userData']);
+          await _storeUserRegistrationStatus(true);
+          
+          return data['userData'];
+        }
       }
       
       return null;

@@ -44,7 +44,7 @@ class AuthService {
   Future<void> _initializeFirebase() async {
     await Firebase.initializeApp();
     _googleSignIn.initialize(
-      clientId: '615995801871-ks4eoqr4cb9jkc2cr2ucfgv3at6pcdj1.apps.googleusercontent.com',
+      clientId: '372494251881-dekm0ari0d01uvqm48fifam7f1pu6dne.apps.googleusercontent.com',
     );
     FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   }
@@ -130,11 +130,12 @@ class AuthService {
     try {
       final idToken = await user.getIdToken();
 
-      final response = await apiService.post(
-        'https://api.oneoneapp.in/auth/signup',
+      // Try with Bearer token first (standard approach)
+      var response = await apiService.post(
+        'http://192.168.1.242:5050/auth/signup',
         headers: {
           'Content-Type': 'application/json',
-          'token': idToken ?? '',
+          'Authorization': 'Bearer $idToken',
         },
         body: {
           'uid': user.uid,
@@ -145,34 +146,105 @@ class AuthService {
         },
       );
 
-      if (response.statusCode == 200) {
+      // If Bearer token fails with 500, try with token header (fallback)
+      if (response.statusCode == 500) {
+        logger.info("Bearer token failed, trying with token header as fallback");
+        response = await apiService.post(
+          'http://192.168.1.242:5050/auth/signup',
+          headers: {
+            'Content-Type': 'application/json',
+            'token': idToken ?? '',
+          },
+          body: {
+            'uid': user.uid,
+            'name': user.displayName,
+            'email': user.email,
+            'photoUrl': user.photoURL,
+            'fcmToken': _fcmToken,
+          },
+        );
+      }
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
         logger.info("User data sent successfully: NEW USER!!");
         return UserAuthStatus.newUser;
       } else if (response.statusCode == 400) {
         final body = response.data;
-        final userData = {
-          'name': body['user']['name'],
-          'dob': body['user']['dob'],
-          'profilePic': body['user']['profilePic'],
-          'timestamp': body['user']['createdAt'],
-          'uid': body['user']['uid'],
-          'email': body['user']['email'],
-        };
-        UserService.updateUserData(userData);
-        if (body['user'] != null && body['user']['dob'] != null) {
-          logger.info("User already registered");
-          return UserAuthStatus.alreadyRegistered;
+        if (body != null && body['user'] != null) {
+          final userData = {
+            'name': body['user']['name'],
+            'dob': body['user']['dob'],
+            'profilePic': body['user']['profilePic'],
+            'timestamp': body['user']['createdAt'],
+            'uid': body['user']['uid'],
+            'email': body['user']['email'],
+          };
+          UserService.updateUserData(userData);
+          if (body['user']['dob'] != null) {
+            logger.info("User already registered");
+            return UserAuthStatus.alreadyRegistered;
+          } else {
+            logger.info("User exists without completing setup");
+            return UserAuthStatus.existsWithoutSetup;
+          }
         } else {
-          logger.info("User exists without completing setup");
+          logger.info("User exists but response format unexpected");
           return UserAuthStatus.existsWithoutSetup;
         }
+      } else if (response.statusCode == 409) {
+        // User already exists
+        logger.info("User already exists, checking registration status");
+        return await _checkUserRegistrationStatus(user);
+      } else if (response.statusCode != null && response.statusCode! >= 500) {
+        logger.error("Server error (${response.statusCode}): ${response.data}");
+        return UserAuthStatus.error;
       } else {
-        logger.warning("Unexpected status: ${response.statusCode}");
-        logger.info("User not registered: NEW USER!!");
+        logger.warning("Unexpected status: ${response.statusCode}, treating as new user");
         return UserAuthStatus.newUser;
       }
     } catch (e) {
       logger.error("Error sending user data: $e");
+      if (e.toString().contains('500') || e.toString().contains('DioException')) {
+        return UserAuthStatus.error;
+      }
+      return UserAuthStatus.newUser;
+    }
+  }
+
+  Future<UserAuthStatus> _checkUserRegistrationStatus(User user) async {
+    try {
+      final idToken = await user.getIdToken();
+      
+      final response = await apiService.get(
+        'http://192.168.1.242:5050/user/check',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $idToken',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final body = response.data;
+        if (body['isRegistered'] == true) {
+          if (body['userData'] != null) {
+            UserService.updateUserData(body['userData']);
+            if (body['userData']['dob'] != null) {
+              return UserAuthStatus.alreadyRegistered;
+            } else {
+              return UserAuthStatus.existsWithoutSetup;
+            }
+          } else {
+            return UserAuthStatus.alreadyRegistered;
+          }
+        } else {
+          return UserAuthStatus.newUser;
+        }
+      } else {
+        logger.warning("Failed to check user status: ${response.statusCode}");
+        return UserAuthStatus.newUser;
+      }
+    } catch (e) {
+      logger.error("Error checking user registration status: $e");
       return UserAuthStatus.newUser;
     }
   }

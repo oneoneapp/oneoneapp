@@ -8,19 +8,38 @@ import 'package:one_one/screens/setup/setup_page.dart';
 import 'package:one_one/screens/walkie_talkie_screen.dart';
 import 'package:one_one/services/user_service.dart';
 
+class AppRouterNotifier extends ChangeNotifier {
+  static final AppRouterNotifier _instance = AppRouterNotifier._internal();
+  factory AppRouterNotifier() => _instance;
+  AppRouterNotifier._internal();
+
+  void refresh() {
+    notifyListeners();
+  }
+}
+
 class AppRouter {
+  static final _routerNotifier = AppRouterNotifier();
+  
   static GoRouter get routerData => GoRouter(
     initialLocation: '/',
     requestFocus: false,
-    refreshListenable: FirebaseAuthChangeListenable(),
+    refreshListenable: Listenable.merge([
+      FirebaseAuthChangeListenable(),
+      _routerNotifier,
+    ]),
     redirect: (context, state) async {
       final userData = await UserService.getUserData();
-      logger.debug("Router redirect check: userData=$userData}");
+      logger.debug("Router redirect check: userData=$userData, path=${state.path}");
+      
       if (userData == null) {
+        logger.debug("No user data found, redirecting to login");
         return "/login";
       } else if (userData['name'] == null) {
+        logger.debug("User data exists but no name, redirecting to setup");
         return "/setup";
       } else {
+        logger.debug("User data complete, allowing access to requested route");
         return null;
       }
     },
@@ -48,6 +67,10 @@ class AppRouter {
       ),
     ],
   );
+
+  static void refreshRouter() {
+    _routerNotifier.refresh();
+  }
 }
 
 class FirebaseAuthChangeListenable extends ChangeNotifier {

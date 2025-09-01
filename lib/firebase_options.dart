@@ -17,7 +17,10 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      return web;
+      throw UnsupportedError(
+        'DefaultFirebaseOptions have not been configured for web - '
+        'you can reconfigure this by running the FlutterFire CLI again.',
+      );
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -25,9 +28,15 @@ class DefaultFirebaseOptions {
       case TargetPlatform.iOS:
         return ios;
       case TargetPlatform.macOS:
-        return macos;
+        throw UnsupportedError(
+          'DefaultFirebaseOptions have not been configured for macos - '
+          'you can reconfigure this by running the FlutterFire CLI again.',
+        );
       case TargetPlatform.windows:
-        return windows;
+        throw UnsupportedError(
+          'DefaultFirebaseOptions have not been configured for windows - '
+          'you can reconfigure this by running the FlutterFire CLI again.',
+        );
       case TargetPlatform.linux:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for linux - '
@@ -41,49 +50,20 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyAPDMh6yffgIkx2WcIoMjHrfP1-RJ8lKwY',
-    appId: '1:615995801871:android:4b4d694430ed92e16a3e7a',
-    messagingSenderId: '615995801871',
-    projectId: 'one-one-40e5d',
-    storageBucket: 'one-one-40e5d.firebasestorage.app',
+    apiKey: 'AIzaSyA6zNNfKvlCm4wYwcXS5g8agEhHbCGeKpg',
+    appId: '1:372494251881:android:97392ae4e0bd9c20fbaff8',
+    messagingSenderId: '372494251881',
+    projectId: 'oneoneapp-811dd',
+    storageBucket: 'oneoneapp-811dd.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyD9bfGZbJ7kgWkexRZKgoCkn3aewEnSDaM',
-    appId: '1:615995801871:ios:86c575698d8f5f7d6a3e7a',
-    messagingSenderId: '615995801871',
-    projectId: 'one-one-40e5d',
-    storageBucket: 'one-one-40e5d.firebasestorage.app',
-    iosBundleId: 'com.example.tenTen',
-  );
-
-  static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyD9bfGZbJ7kgWkexRZKgoCkn3aewEnSDaM',
-    appId: '1:615995801871:ios:86c575698d8f5f7d6a3e7a',
-    messagingSenderId: '615995801871',
-    projectId: 'one-one-40e5d',
-    storageBucket: 'one-one-40e5d.firebasestorage.app',
-    iosBundleId: 'com.example.tenTen',
-  );
-
-  static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyCic9YRbthQdRr0el7L7gwlz6NIB3o8eso',
-    appId: '1:615995801871:web:dfb107005933d7fc6a3e7a',
-    messagingSenderId: '615995801871',
-    projectId: 'one-one-40e5d',
-    authDomain: 'one-one-40e5d.firebaseapp.com',
-    storageBucket: 'one-one-40e5d.firebasestorage.app',
-    measurementId: 'G-DM49HV223P',
-  );
-
-  static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyCic9YRbthQdRr0el7L7gwlz6NIB3o8eso',
-    appId: '1:615995801871:web:84a113272be3ecef6a3e7a',
-    messagingSenderId: '615995801871',
-    projectId: 'one-one-40e5d',
-    authDomain: 'one-one-40e5d.firebaseapp.com',
-    storageBucket: 'one-one-40e5d.firebasestorage.app',
-    measurementId: 'G-LKX9NQH6VV',
+    apiKey: 'AIzaSyCBxYH-UuIDVXcK-Az5J9mVGx9wK54JYLM',
+    appId: '1:372494251881:ios:11b2f66c959a5429fbaff8',
+    messagingSenderId: '372494251881',
+    projectId: 'oneoneapp-811dd',
+    storageBucket: 'oneoneapp-811dd.firebasestorage.app',
+    iosBundleId: 'com.example.oneOne',
   );
 
 }
