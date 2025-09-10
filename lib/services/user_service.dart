@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:one_one/core/config/locator.dart';
+import 'package:one_one/core/config/logging.dart';
 import 'package:one_one/core/config/routing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -58,7 +59,7 @@ class UserService {
         throw Exception('Failed to check user registration status');
       }
     } catch (e) {
-      print('Error checking user registration: $e');
+      logger.info('Error checking user registration: $e');
       // In case of error, return false to be safe
       return false;
     }
@@ -87,7 +88,7 @@ class UserService {
       }
       return null;
     } catch (e) {
-      print('Error getting local user data: $e');
+      logger.error('Error getting local user data: $e');
       return null;
     }
   }
@@ -103,7 +104,7 @@ class UserService {
       if (user == null) throw Exception('User not authenticated');
 
       final token = await user.getIdToken();
-      print('Submitting user data for ${user.email}');
+      logger.info('Submitting user data for ${user.email}');
 
       String? base64Image;
       if (profilePicture != null) {
@@ -142,7 +143,7 @@ class UserService {
         throw Exception('Failed to submit user data: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error submitting user data: $e');
+      logger.info('Error submitting user data: $e');
       return false;
     }
   }
@@ -213,7 +214,7 @@ class UserService {
       
       return null;
     } catch (e) {
-      print('Error getting user data: $e');
+      logger.info('Error getting user data: $e');
       return null;
     }
   }

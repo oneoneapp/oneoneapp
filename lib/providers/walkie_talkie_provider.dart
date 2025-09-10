@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:one_one/core/config/logging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:socket_io_client/socket_io_client.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
@@ -23,7 +24,7 @@ class WalkieTalkieProvider extends ChangeNotifier {
 
   Future<void> saveToLocalStorage(String key, String value) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    print(value);
+    logger.debug(value);
     await prefs.setString(key, value);
   }
 
@@ -38,14 +39,10 @@ class WalkieTalkieProvider extends ChangeNotifier {
   }
 
   Future<void> initialize() async {
-    // New method for foreground service
-    print('Initializing foreground service');
+    logger.info('Initializing foreground service');
     await _initializeSocket();
   }
 
-  // New method for foreground service initialization
-
-  // Modified _initializeSocket method
   Future<void> _initializeSocket() async {
     try {
       _socketHandler.initSocket();
@@ -53,16 +50,16 @@ class WalkieTalkieProvider extends ChangeNotifier {
 
       socket.onConnect((_) {
         isConnected = true;
-        debugPrint('Socket connected');
+        logger.info('Socket connected');
       });
       socket.onDisconnect((_) {
         isConnected = false;
-        debugPrint('Socket disconnected');
+        logger.info('Socket disconnected');
       });
 
       setupSocketListeners();
     } catch (e) {
-      debugPrint('Socket initialization error: $e');
+      logger.error('Socket initialization error: $e');
     }
   }
 
@@ -116,7 +113,7 @@ class WalkieTalkieProvider extends ChangeNotifier {
 
   void setupWebRTCListeners() {
     socket.on('offer', (data) async {
-      print('Offer received:: $data');
+      logger.info('Offer received:: $data');
       if (data['receiver'] == uniqueCode) {
         await autoAcceptCall(data);
       }
@@ -236,7 +233,7 @@ class WalkieTalkieProvider extends ChangeNotifier {
   @override
   void dispose() {
     disposeResources();
-    FlutterForegroundTask.stopService(); // Stop foreground service
+    FlutterForegroundTask.stopService();
     socket.disconnect();
     super.dispose();
   }
