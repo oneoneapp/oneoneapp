@@ -1,3 +1,4 @@
+import 'package:one_one/core/config/locator.dart';
 import 'package:socket_io_client/socket_io_client.dart';
 
 class SocketHandler {
@@ -13,7 +14,7 @@ class SocketHandler {
   void initSocket() {
     if (socket == null) {
       socket = io(
-        'http://192.168.1.242:5050',
+        loc<ApiService>().baseUrl,
         {
           'transports': ['websocket'],
           'autoConnect': true,

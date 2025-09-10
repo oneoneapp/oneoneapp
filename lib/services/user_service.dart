@@ -6,7 +6,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class UserService {
-  static const String _baseUrl = 'http://192.168.1.242:5050';
   static const String _userRegisteredKey = 'user_registered';
   static const String _userDataKey = 'user_data';
 
@@ -30,7 +29,7 @@ class UserService {
       final token = await user.getIdToken();
       
       final response = await loc<ApiService>().get(
-        '$_baseUrl/user/check',
+        'user/check',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -122,7 +121,7 @@ class UserService {
       };
 
       final response = await loc<ApiService>().post(
-        '$_baseUrl/user/register',
+        'user/register',
         body: userData,
         headers: {
           'Content-Type': 'application/json',
@@ -192,7 +191,7 @@ class UserService {
       
       // Try the check endpoint first since profile endpoint returns 404
       final response = await loc<ApiService>().get(
-        '$_baseUrl/user/check',
+        'user/check',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',

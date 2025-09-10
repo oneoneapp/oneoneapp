@@ -132,7 +132,7 @@ class AuthService {
 
       // Try with Bearer token first (standard approach)
       var response = await apiService.post(
-        'http://192.168.1.242:5050/auth/signup',
+        'auth/signup',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $idToken',
@@ -150,7 +150,7 @@ class AuthService {
       if (response.statusCode == 500) {
         logger.info("Bearer token failed, trying with token header as fallback");
         response = await apiService.post(
-          'http://192.168.1.242:5050/auth/signup',
+          'auth/signup',
           headers: {
             'Content-Type': 'application/json',
             'token': idToken ?? '',
@@ -216,7 +216,7 @@ class AuthService {
       final idToken = await user.getIdToken();
       
       final response = await apiService.get(
-        'http://192.168.1.242:5050/user/check',
+        'user/check',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $idToken',
