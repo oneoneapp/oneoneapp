@@ -1,12 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:one_one/core/config/locator.dart';
+import 'package:one_one/core/config/logging.dart';
 import 'package:one_one/core/config/routing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class UserService {
-  static const String _baseUrl = 'http://192.168.1.244:5050';
   static const String _userRegisteredKey = 'user_registered';
   static const String _userDataKey = 'user_data';
 
@@ -30,7 +30,7 @@ class UserService {
       final token = await user.getIdToken();
       
       final response = await loc<ApiService>().get(
-        '$_baseUrl/user/check',
+        'user/check',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -63,7 +63,7 @@ class UserService {
         throw Exception('Failed to check user registration status');
       }
     } catch (e) {
-      print('Error checking user registration: $e');
+      logger.info('Error checking user registration: $e');
       // In case of error, return false to be safe
       return false;
     }
@@ -92,7 +92,7 @@ class UserService {
       }
       return null;
     } catch (e) {
-      print('Error getting local user data: $e');
+      logger.error('Error getting local user data: $e');
       return null;
     }
   }
@@ -108,7 +108,7 @@ class UserService {
       if (user == null) throw Exception('User not authenticated');
 
       final token = await user.getIdToken();
-      print('Submitting user data for ${user.email}');
+      logger.info('Submitting user data for ${user.email}');
 
       String? base64Image;
       if (profilePicture != null) {
@@ -126,7 +126,7 @@ class UserService {
       };
 
       final response = await loc<ApiService>().post(
-        '$_baseUrl/user/register',
+        'user/register',
         body: userData,
         headers: {
           'Content-Type': 'application/json',
@@ -147,7 +147,7 @@ class UserService {
         throw Exception('Failed to submit user data: ${response.statusCode}');
       }
     } catch (e) {
-      print('Error submitting user data: $e');
+      logger.info('Error submitting user data: $e');
       return false;
     }
   }
@@ -196,7 +196,7 @@ class UserService {
       
       // Try the check endpoint first since profile endpoint returns 404
       final response = await loc<ApiService>().get(
-        '$_baseUrl/user/check',
+        'user/check',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -221,7 +221,7 @@ class UserService {
       
       return null;
     } catch (e) {
-      print('Error getting user data: $e');
+      logger.info('Error getting user data: $e');
       return null;
     }
   }

@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:one_one/core/config/logging.dart';
 import 'package:one_one/firebase_options.dart';
 import 'package:one_one/providers/walkie_talkie_provider.dart';
 
@@ -8,16 +9,16 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  print("Handling a background message: ${message.messageId}");
+  logger.info("Handling a background message: ${message.messageId}");
   await connectToServer(message);
 }
 
 Future<void> connectToServer(RemoteMessage message) async {
   try {
-    print("Message: ${message.notification?.title}");
+    logger.info("Message: ${message.notification?.title}");
 
     if (message.notification?.body == null) {
-      print('No notification payload found.');
+      logger.info('No notification payload found.');
       return;
     }
 
@@ -30,8 +31,8 @@ Future<void> connectToServer(RemoteMessage message) async {
       WalkieTalkieProvider().setupSocketListeners();
     }
 
-    print('Connected to server');
+    logger.info('Connected to server');
   } catch (e) {
-    print('Error connecting to server: $e');
+    logger.info('Error connecting to server: $e');
   }
 }
