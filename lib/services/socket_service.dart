@@ -13,7 +13,7 @@ class SocketHandler {
   void initSocket() {
     if (socket == null) {
       socket = io(
-        'http://192.168.1.242:5050',
+        'http://192.168.1.244:5050',
         {
           'transports': ['websocket'],
           'autoConnect': true,

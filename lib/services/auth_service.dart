@@ -132,7 +132,7 @@ class AuthService {
 
       // Try with Bearer token first (standard approach)
       var response = await apiService.post(
-        'http://192.168.1.242:5050/auth/signup',
+        'http://192.168.1.244:5050/auth/signup',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $idToken',
@@ -150,7 +150,7 @@ class AuthService {
       if (response.statusCode == 500) {
         logger.info("Bearer token failed, trying with token header as fallback");
         response = await apiService.post(
-          'http://192.168.1.242:5050/auth/signup',
+          'http://192.168.1.244:5050/auth/signup',
           headers: {
             'Content-Type': 'application/json',
             'token': idToken ?? '',
@@ -178,9 +178,14 @@ class AuthService {
             'timestamp': body['user']['createdAt'],
             'uid': body['user']['uid'],
             'email': body['user']['email'],
+            'registrationStatus': body['user']['registrationStatus'],
           };
           UserService.updateUserData(userData);
-          if (body['user']['dob'] != null) {
+          // Check registrationStatus field first
+          if (body['user']['registrationStatus'] == 'pending') {
+            logger.info("User registration is pending, redirecting to setup");
+            return UserAuthStatus.existsWithoutSetup;
+          } else if (body['user']['dob'] != null) {
             logger.info("User already registered");
             return UserAuthStatus.alreadyRegistered;
           } else {
@@ -216,7 +221,7 @@ class AuthService {
       final idToken = await user.getIdToken();
       
       final response = await apiService.get(
-        'http://192.168.1.242:5050/user/check',
+        'http://192.168.1.244:5050/user/check',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $idToken',
@@ -228,7 +233,10 @@ class AuthService {
         if (body['isRegistered'] == true) {
           if (body['userData'] != null) {
             UserService.updateUserData(body['userData']);
-            if (body['userData']['dob'] != null) {
+            // Check registrationStatus field
+            if (body['userData']['registrationStatus'] == 'pending') {
+              return UserAuthStatus.existsWithoutSetup;
+            } else if (body['userData']['dob'] != null) {
               return UserAuthStatus.alreadyRegistered;
             } else {
               return UserAuthStatus.existsWithoutSetup;

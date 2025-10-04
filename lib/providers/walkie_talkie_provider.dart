@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:socket_io_client/socket_io_client.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:one_one/services/socket_service.dart';
 
 class WalkieTalkieProvider extends ChangeNotifier {
@@ -51,8 +52,13 @@ class WalkieTalkieProvider extends ChangeNotifier {
       _socketHandler.initSocket();
       socket = _socketHandler.socket!;
 
-      socket.onConnect((_) {
+      socket.onConnect((_) async {
         isConnected = true;
+        
+        socket.emit('connect-user',{
+          'uid': FirebaseAuth.instance.currentUser?.uid,
+          'name': userName,
+        });
         debugPrint('Socket connected');
       });
       socket.onDisconnect((_) {

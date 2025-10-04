@@ -35,8 +35,8 @@ class AppRouter {
       if (userData == null) {
         logger.debug("No user data found, redirecting to login");
         return "/login";
-      } else if (userData['name'] == null) {
-        logger.debug("User data exists but no name, redirecting to setup");
+      } else if (userData['registrationStatus'] == 'pending' || userData['name'] == null) {
+        logger.debug("User registration is pending or no name, redirecting to setup");
         return "/setup";
       } else {
         logger.debug("User data complete, allowing access to requested route");

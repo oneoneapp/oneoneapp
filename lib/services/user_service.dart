@@ -6,7 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class UserService {
-  static const String _baseUrl = 'http://192.168.1.242:5050';
+  static const String _baseUrl = 'http://192.168.1.244:5050';
   static const String _userRegisteredKey = 'user_registered';
   static const String _userDataKey = 'user_data';
 
@@ -42,12 +42,16 @@ class UserService {
         bool isRegistered = data['isRegistered'] ?? false;
         
         if (isRegistered) {
-          // Store locally for future checks
-          await _storeUserRegistrationStatus(true);
-          
           // Also store user data if provided
           if (data['userData'] != null) {
             await _storeUserData(data['userData']);
+            // Only mark as registered if registrationStatus is not pending
+            if (data['userData']['registrationStatus'] != 'pending') {
+              await _storeUserRegistrationStatus(true);
+            }
+          } else {
+            // Store locally for future checks
+            await _storeUserRegistrationStatus(true);
           }
         }
         
@@ -133,7 +137,7 @@ class UserService {
       if (response.statusCode == 200 || response.statusCode == 201) {
         // Store registration status and user data locally
         await _storeUserRegistrationStatus(true);
-        await _storeUserData(userData);
+        await _storeUserData(response.data['user']);
         
         // Refresh the router to pick up the new user data
         AppRouter.refreshRouter();
@@ -203,12 +207,15 @@ class UserService {
         final data = response.data;
         
         // If user data is available in the check response
-        if (data['userData'] != null) {
+        if (data['user'] != null) {
           // Store the data locally for future use
-          await _storeUserData(data['userData']);
-          await _storeUserRegistrationStatus(true);
+          await _storeUserData(data['user']);
+          // Only mark as registered if registrationStatus is not pending
+          if (data['user']['registrationStatus'] != 'pending') {
+            await _storeUserRegistrationStatus(true);
+          }
           
-          return data['userData'];
+          return data['user'];
         }
       }
       
