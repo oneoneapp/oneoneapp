@@ -130,7 +130,6 @@ class AuthService {
     try {
       final idToken = await user.getIdToken();
 
-      // Try with Bearer token first (standard approach)
       var response = await apiService.post(
         'auth/signup',
         headers: {
@@ -145,25 +144,6 @@ class AuthService {
           'fcmToken': _fcmToken,
         },
       );
-
-      // If Bearer token fails with 500, try with token header (fallback)
-      if (response.statusCode == 500) {
-        logger.info("Bearer token failed, trying with token header as fallback");
-        response = await apiService.post(
-          'auth/signup',
-          headers: {
-            'Content-Type': 'application/json',
-            'token': idToken ?? '',
-          },
-          body: {
-            'uid': user.uid,
-            'name': user.displayName,
-            'email': user.email,
-            'photoUrl': user.photoURL,
-            'fcmToken': _fcmToken,
-          },
-        );
-      }
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         logger.info("User data sent successfully: NEW USER!!");
