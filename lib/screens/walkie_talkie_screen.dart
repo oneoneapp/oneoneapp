@@ -61,6 +61,22 @@ class _WalkieTalkieScreenState extends State<WalkieTalkieScreen> {
         title: const Text('OneOne'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.work),
+            onPressed: () async {
+              final idToken = await FirebaseAuth.instance.currentUser?.getIdToken();
+              final response = await loc<ApiService>().get(
+                'friend/list',
+                headers: {
+                  // 'Content-Type': 'application/json',
+                  'Authorization': 'Bearer $idToken',
+                },
+              );
+              logger.debug(idToken);
+              logger.debug(response);
+            },
+            tooltip: 'Log Firebase ID Token',
+          ),
+          IconButton(
             icon: const Icon(Icons.bug_report),
             onPressed: () => _logFirebaseIdToken(context),
             tooltip: 'Log Firebase ID Token',
