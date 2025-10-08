@@ -72,12 +72,9 @@ class _SetupStepPageState extends State<SetupStepPage> with SingleTickerProvider
                     children: [
                       Text(
                         widget.title,
-                        style: TextTheme.of(context).headlineMedium
-                        // style: const TextStyle(
-                        //       color: Colors.white,
-                        //       fontSize: 28,
-                        //       fontWeight: FontWeight.bold
-                        // )
+                        style: TextTheme.of(context).headlineMedium?.copyWith(
+                          color: ColorScheme.of(context).onSurface,
+                        ),
                       ),
                       const SizedBox(height: Spacing.s2),
                       LinearProgressIndicator(

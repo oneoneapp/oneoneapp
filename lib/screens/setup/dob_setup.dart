@@ -52,26 +52,20 @@ class DobSetupState extends State<DobSetup> {
           padding: EdgeInsets.symmetric(
             horizontal: Spacing.s5, vertical: Spacing.s4
           ),
+          margin: EdgeInsets.all(Spacing.s4),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(Spacing.s4),
+            color: ColorScheme.of(context).surfaceContainerLow,
+            borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: _selectedDate != null ? Colors.black : Colors.transparent,
+              color: ColorScheme.of(context).primary,
               width: 2,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.1),
-                blurRadius: 10,
-                offset: Offset(0, 4),
-              ),
-            ],
           ),
           child: Row(
             children: [
               Icon(
                 Icons.calendar_today,
-                color: Colors.black.withValues(alpha: 0.6),
+                color: ColorScheme.of(context).onSurface,
                 size: 20,
               ),
               SizedBox(width: 12),
@@ -83,8 +77,8 @@ class DobSetupState extends State<DobSetup> {
                   style: TextStyle(
                     fontSize: 16,
                     color: _selectedDate != null
-                        ? Colors.black
-                        : Colors.black.withValues(alpha: 0.6),
+                        ? ColorScheme.of(context).onSurface
+                        : ColorScheme.of(context).onSurface.withAlpha(100),
                     fontWeight: _selectedDate != null
                         ? FontWeight.w500
                         : FontWeight.w400,
@@ -93,7 +87,7 @@ class DobSetupState extends State<DobSetup> {
               ),
               Icon(
                 Icons.arrow_drop_down,
-                color: Colors.black.withValues(alpha: 0.6),
+                color: ColorScheme.of(context).onSurface,
               ),
             ],
           ),
