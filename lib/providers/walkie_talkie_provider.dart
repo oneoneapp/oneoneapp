@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:one_one/core/config/locator.dart';
 import 'package:one_one/core/config/logging.dart';
+import 'package:one_one/services/api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:socket_io_client/socket_io_client.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
@@ -40,7 +42,10 @@ class WalkieTalkieProvider extends ChangeNotifier {
   }
 
   Future<void> initialize() async {
-    logger.info('Initializing foreground service');
+    final res = await loc<ApiService>().get(
+      "friend/list",
+      authenticated: true
+    );
     await _initializeSocket();
   }
 

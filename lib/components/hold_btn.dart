@@ -75,8 +75,6 @@ class _HoldBtnState extends State<HoldBtn> {
             )
           ),
         Container(
-          height: 150,
-          width: 150,
           alignment: Alignment.center,
           child: GestureDetector(
             onTapDown: (details) {

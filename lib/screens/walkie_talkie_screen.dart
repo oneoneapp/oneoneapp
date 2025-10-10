@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:one_one/components/bg_container.dart';
+import 'package:one_one/components/hlo.dart';
 import 'package:one_one/components/hold_btn.dart';
 import 'package:one_one/core/config/locator.dart';
 import 'package:one_one/core/config/logging.dart';
@@ -15,6 +17,8 @@ class WalkieTalkieScreen extends StatefulWidget {
 }
 
 class _WalkieTalkieScreenState extends State<WalkieTalkieScreen> {
+  bool isHolding = false;
+
   final nameController = TextEditingController();
   final targetCodeController = TextEditingController();
   final messageController = TextEditingController();
@@ -52,14 +56,122 @@ class _WalkieTalkieScreenState extends State<WalkieTalkieScreen> {
     }
   }
 
+
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<WalkieTalkieProvider>(context);
 
     return Scaffold(
+      body: Stack(
+        children: [
+          BgContainer(
+            isShaking: isHolding,
+            displayMargin: isHolding,
+            imageUrl: "https://picsum.photos/200/300"
+          ),
+          Positioned.fill(
+            top: null,
+            bottom: 50,
+            child: CenterSnapScroll(
+              children: [
+                AddFrndBtn(),
+                ...List.generate(
+                  5,
+                  (index) {
+                    return HoldBtn(
+                      image: "https://picsum.photos/200/300",
+                      onHold: () {
+                        setState(() {
+                          isHolding = true;
+                        });
+                        // widget.provider.startCall(widget.provider.connectedUserCode);
+                      },
+                      onRelease: () {
+                        setState(() {
+                          isHolding = false;
+                        });
+                        // widget.provider.disposeResources();
+                      },
+                    );
+                  }
+                )
+              ],
+            ),
+          ),
+          // Positioned(
+          //   bottom: 50,
+          //   right: 0,
+          //   left: 0,
+          //   child: HoldBtn(
+          //     image: "https://picsum.photos/200/300",
+          //     onHold: () {
+          //       setState(() {
+          //         isHolding = true;
+          //       });
+          //       // widget.provider.startCall(widget.provider.connectedUserCode);
+          //     },
+          //     onRelease: () {
+          //       setState(() {
+          //         isHolding = false;
+          //       });
+          //       // widget.provider.disposeResources();
+          //     },
+          //   ),
+          // )
+        ],
+      ),
+    );
+
+    return Scaffold(
       appBar: AppBar(
         title: const Text('OneOne'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: () async {
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Add Friend'),
+                  content: TextField(
+                    decoration: const InputDecoration(
+                      hintText: 'Enter friend code',
+                    ),
+                    onSubmitted: (value) async {
+                      if (value.isNotEmpty) {
+                        final idToken = await FirebaseAuth.instance.currentUser?.getIdToken();
+                        final response = await loc<ApiService>().post(
+                          'friend/send-request',
+                          body: {
+                            "uniqueCode": value
+                          },
+                          headers: {
+                            'Authorization': 'Bearer $idToken',
+                          },
+                        );
+                        logger.debug(response);
+                        if (!context.mounted) return;
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Response: $response'),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancel'),
+                    ),
+                  ],
+                ),
+              );
+            },
+            tooltip: 'Log Firebase ID Token',
+          ),
           IconButton(
             icon: const Icon(Icons.work),
             onPressed: () async {
@@ -151,6 +263,67 @@ class _WalkieTalkieScreenState extends State<WalkieTalkieScreen> {
     targetCodeController.dispose();
     messageController.dispose();
     super.dispose();
+  }
+}
+
+class AddFrndBtn extends StatelessWidget {
+  const AddFrndBtn({
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      type: MaterialType.transparency,
+      shape: const CircleBorder(),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () {
+          showBottomSheet(
+            context: context,
+            builder: (context) {
+              return SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    children: [
+                      TextField(
+                        onSubmitted: (value) async{
+                          if (value.isNotEmpty) {
+                            final String? idToken = await FirebaseAuth.instance.currentUser?.getIdToken();
+                            loc<ApiService>().post(
+                              'friend/send-request',
+                              body: {
+                                "uniqueCode": value
+                              },
+                              headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': 'Bearer $idToken',
+                              },
+                            );
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+          );
+        },
+        radius: 70,
+        child: Ink(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: ColorScheme.of(context).surface
+          ),
+          child: Icon(
+            Icons.add,
+            color: ColorScheme.of(context).onSurfaceVariant
+          )
+        ),
+      ),
+    );
   }
 }
 
