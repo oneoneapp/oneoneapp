@@ -120,7 +120,7 @@ class _HomePageState extends State<HomePage> {
             setState(() {
               isHolding = false;
             });
-            provider.disposeResources();
+            // provider.disposeResources();
           },
         );
       }

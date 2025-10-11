@@ -23,7 +23,7 @@ class HomeProvider extends ChangeNotifier {
           _friends.add(Friend.fromMap(friend));
         }
         for (final friend in res.data["pendingRequests"]) {
-          _friends.add(Friend.fromMap(friend));
+          _pendingRequests.add(Friend.fromMap(friend));
         }
       }
       notifyListeners();
