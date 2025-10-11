@@ -158,6 +158,7 @@ class AuthService {
             'timestamp': body['user']['createdAt'],
             'uid': body['user']['uid'],
             'email': body['user']['email'],
+            'uniqueCode': body['user']['uniqueCode'],
             'registrationStatus': body['user']['registrationStatus'],
           };
           UserService.updateUserData(userData);

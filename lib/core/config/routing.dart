@@ -3,9 +3,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter/material.dart';
 import 'package:one_one/core/config/logging.dart';
+import 'package:one_one/screens/home_page.dart';
 import 'package:one_one/screens/login_page.dart';
 import 'package:one_one/screens/setup/setup_page.dart';
-import 'package:one_one/screens/walkie_talkie_screen.dart';
 import 'package:one_one/services/user_service.dart';
 
 class AppRouterNotifier extends ChangeNotifier {
@@ -48,7 +48,7 @@ class AppRouter {
         name: "home",
         path: "/",
         builder: (context, state) {
-          return const WalkieTalkieScreen();
+          return const HomePage();
         },
       ),
       GoRoute(

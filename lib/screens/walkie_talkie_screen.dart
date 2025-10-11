@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:one_one/components/bg_container.dart';
-import 'package:one_one/components/hlo.dart';
 import 'package:one_one/components/hold_btn.dart';
 import 'package:one_one/core/config/locator.dart';
 import 'package:one_one/core/config/logging.dart';
 import 'package:one_one/core/shared/spacing.dart';
+import 'package:one_one/models/friend.dart';
+import 'package:one_one/providers/home_provider.dart';
 import 'package:provider/provider.dart';
 import '../providers/walkie_talkie_provider.dart';
 
@@ -17,11 +17,36 @@ class WalkieTalkieScreen extends StatefulWidget {
 }
 
 class _WalkieTalkieScreenState extends State<WalkieTalkieScreen> {
+  late final PageController centerSnapScrollController;
   bool isHolding = false;
 
   final nameController = TextEditingController();
   final targetCodeController = TextEditingController();
   final messageController = TextEditingController();
+
+  @override
+  void initState() {
+    centerSnapScrollController = PageController(
+      initialPage: 1,
+      viewportFraction: 0.3
+    );
+    centerSnapScrollController.addListener(listener);
+    super.initState();
+  }
+
+  void listener() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    centerSnapScrollController.removeListener(listener);
+    centerSnapScrollController.dispose();
+    nameController.dispose();
+    targetCodeController.dispose();
+    messageController.dispose();
+    super.dispose();
+  }
 
   Future<void> _logFirebaseIdToken(BuildContext context) async {
     try {
@@ -56,71 +81,86 @@ class _WalkieTalkieScreenState extends State<WalkieTalkieScreen> {
     }
   }
 
+  Friend? get selectedAvatar {
+    if (centerSnapScrollController.hasClients) {
+      final homeProvider = Provider.of<HomeProvider>(context, listen: false);
+      final int index = (centerSnapScrollController.page ?? 0).toInt() - 1;
+      if (index >= 0 && index < homeProvider.friends.length) {
+        return homeProvider.friends[index];
+      }
+    }
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<WalkieTalkieProvider>(context);
+    // final homeProvider = Provider.of<HomeProvider>(context);
 
-    return Scaffold(
-      body: Stack(
-        children: [
-          BgContainer(
-            isShaking: isHolding,
-            displayMargin: isHolding,
-            imageUrl: "https://picsum.photos/200/300"
-          ),
-          Positioned.fill(
-            top: null,
-            bottom: 50,
-            child: CenterSnapScroll(
-              children: [
-                AddFrndBtn(),
-                ...List.generate(
-                  5,
-                  (index) {
-                    return HoldBtn(
-                      image: "https://picsum.photos/200/300",
-                      onHold: () {
-                        setState(() {
-                          isHolding = true;
-                        });
-                        // widget.provider.startCall(widget.provider.connectedUserCode);
-                      },
-                      onRelease: () {
-                        setState(() {
-                          isHolding = false;
-                        });
-                        // widget.provider.disposeResources();
-                      },
-                    );
-                  }
-                )
-              ],
-            ),
-          ),
-          // Positioned(
-          //   bottom: 50,
-          //   right: 0,
-          //   left: 0,
-          //   child: HoldBtn(
-          //     image: "https://picsum.photos/200/300",
-          //     onHold: () {
-          //       setState(() {
-          //         isHolding = true;
-          //       });
-          //       // widget.provider.startCall(widget.provider.connectedUserCode);
-          //     },
-          //     onRelease: () {
-          //       setState(() {
-          //         isHolding = false;
-          //       });
-          //       // widget.provider.disposeResources();
-          //     },
-          //   ),
-          // )
-        ],
-      ),
-    );
+    // return Scaffold(
+    //   body: Stack(
+    //     children: [
+    //       BgContainer(
+    //         isShaking: isHolding,
+    //         displayMargin: isHolding,
+    //         imageUrl: selectedAvatar?.photoUrl,
+    //       ),
+    //       Positioned.fill(
+    //         top: null,
+    //         bottom: 50,
+    //         child: CenterSnapScroll(
+    //           controller: centerSnapScrollController,
+    //           children: [
+    //             AddFrndBtn(),
+    //             ...List.generate(
+    //               homeProvider.friends.length,
+    //               (index) {
+    //                 final friend = homeProvider.friends[index];
+    //                 return HoldBtn(
+    //                   image: friend.photoUrl,
+    //                   onHold: () {
+    //                     setState(() {
+    //                       isHolding = true;
+    //                     });
+    //                     if (friend.socketId != null) {
+    //                       provider.startCall(friend.socketId!);
+    //                     }
+    //                   },
+    //                   onRelease: () {
+    //                     setState(() {
+    //                       isHolding = false;
+    //                     });
+    //                     provider.disposeResources();
+    //                   },
+    //                 );
+    //               }
+    //             )
+    //           ],
+    //         ),
+    //       ),
+    //       // Positioned(
+    //       //   bottom: 50,
+    //       //   right: 0,
+    //       //   left: 0,
+    //       //   child: HoldBtn(
+    //       //     image: "https://picsum.photos/200/300",
+    //       //     onHold: () {
+    //       //       setState(() {
+    //       //         isHolding = true;
+    //       //       });
+    //       //       // widget.provider.startCall(widget.provider.connectedUserCode);
+    //       //     },
+    //       //     onRelease: () {
+    //       //       setState(() {
+    //       //         isHolding = false;
+    //       //       });
+    //       //       // widget.provider.disposeResources();
+    //       //     },
+    //       //   ),
+    //       // )
+    //     ],
+    //   ),
+    // );
 
     return Scaffold(
       appBar: AppBar(
@@ -256,14 +296,6 @@ class _WalkieTalkieScreenState extends State<WalkieTalkieScreen> {
       ),
     );
   }
-
-  @override
-  void dispose() {
-    nameController.dispose();
-    targetCodeController.dispose();
-    messageController.dispose();
-    super.dispose();
-  }
 }
 
 class AddFrndBtn extends StatelessWidget {
@@ -293,6 +325,32 @@ class AddFrndBtn extends StatelessWidget {
                             final String? idToken = await FirebaseAuth.instance.currentUser?.getIdToken();
                             loc<ApiService>().post(
                               'friend/send-request',
+                              body: {
+                                "uniqueCode": value
+                              },
+                              headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': 'Bearer $idToken',
+                              },
+                            );
+                          }
+                        },
+                      ),
+                      ElevatedButton(
+                        onPressed: () async {
+                          await loc<ApiService>().get(
+                            "friend/list",
+                            authenticated: true
+                          );
+                        },
+                        child: Text("Fetch Friends"),
+                      ),
+                      TextField(
+                        onSubmitted: (value) async{
+                          if (value.isNotEmpty) {
+                            final String? idToken = await FirebaseAuth.instance.currentUser?.getIdToken();
+                            loc<ApiService>().post(
+                              'friend/accept-request',
                               body: {
                                 "uniqueCode": value
                               },

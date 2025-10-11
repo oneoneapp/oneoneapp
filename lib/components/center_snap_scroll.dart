@@ -1,27 +1,31 @@
 import 'package:flutter/material.dart';
 
 class CenterSnapScroll extends StatefulWidget {
+  final PageController controller;
   final List<Widget> children;
 
-  const CenterSnapScroll({super.key, required this.children});
+  const CenterSnapScroll({
+    super.key,
+    required this.controller,
+    required this.children
+  });
 
   @override
   State<CenterSnapScroll> createState() => _CenterSnapScrollState();
 }
 
 class _CenterSnapScrollState extends State<CenterSnapScroll> {
-  late final PageController _pageController;
   int _currentPage = 1;
 
   @override
   void initState() {
     super.initState();
-    _pageController = PageController(
-      initialPage: _currentPage,
-      viewportFraction: 0.3
-    );
-    _pageController.addListener(() {
-      final newPage = _pageController.page?.round() ?? 0;
+    // widget.controller = PageController(
+    //   initialPage: _currentPage,
+    //   viewportFraction: 0.3
+    // );
+    widget.controller.addListener(() {
+      final newPage = widget.controller.page?.round() ?? 0;
       if (newPage != _currentPage) {
         setState(() => _currentPage = newPage);
       }
@@ -33,7 +37,7 @@ class _CenterSnapScrollState extends State<CenterSnapScroll> {
     return SizedBox(
       height: 150,
       child: PageView.builder(
-        controller: _pageController,
+        controller: widget.controller,
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
         itemCount: widget.children.length,

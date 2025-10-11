@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:one_one/core/config/locator.dart';
 import 'package:one_one/core/config/routing.dart';
 import 'package:one_one/core/theme/theme.dart';
+import 'package:one_one/providers/home_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:one_one/providers/walkie_talkie_provider.dart';
 import 'firebase_options.dart';
@@ -26,6 +27,7 @@ class OneOneApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => WalkieTalkieProvider()),
+        ChangeNotifierProvider(create: (_) => HomeProvider()),
       ],
       child: MaterialApp.router(
         title: 'OneOne',

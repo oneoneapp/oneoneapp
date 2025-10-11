@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:one_one/core/shared/spacing.dart';
 
 class HoldBtn extends StatefulWidget {
   final String? image;
-  final bool primary;
   final bool? isHolding;
+  final bool enabled;
   final Function()? onHold;
   final Function()? onHolding;
   final Function()? onRelease;
@@ -12,8 +13,8 @@ class HoldBtn extends StatefulWidget {
   const HoldBtn({
     super.key,
     this.image,
-    this.primary = false,
     this.isHolding,
+    this.enabled = true,
     this.onHold,
     this.onHolding,
     this.onRelease
@@ -34,20 +35,75 @@ class _HoldBtnState extends State<HoldBtn> {
     super.initState();
   }
 
-  double get size => (_isHolding ? 80 : 70) + (widget.primary ? 20 : 0);
+  double get size => (_isHolding ? 80 : 70);
+
+  void onTapDown(TapDownDetails details) {
+    if (!widget.enabled) return;
+    _isHolding = true;
+    setState(() {});
+    HapticFeedback.mediumImpact();
+    widget.onHold?.call();
+  }
+
+  void onTapUp(TapUpDetails details) {
+    if (!widget.enabled) return;
+    // Release only if not locked in holding
+    if (_isHolding && !_holdLocked) {
+      _isHolding = false;
+      setState(() {});
+      widget.onRelease?.call();
+    }
+  }
+
+  void onTapCancel() {
+    if (!widget.enabled) return;
+    if (_isHolding) {
+      _isHolding = false;
+      setState(() {});
+      widget.onRelease?.call();
+    }
+  }
+
+  void onPanUpdate(DragUpdateDetails details) {
+    if (!widget.enabled) return;
+    // Detect upward swipe (negative dy)
+    if (details.delta.dy < -5 && !_isHolding) {
+      _isHolding = true;
+      _holdLocked = true;
+      setState(() {});
+      HapticFeedback.mediumImpact();
+      widget.onHolding?.call();
+    }
+  }
+
+  void onPanEnd(DragEndDetails details) {
+    if (!widget.enabled) return;
+    // If user swiped upward, keep holding
+    // If not, release
+    if (_isHolding) {
+      // Do nothing, stays holding
+    } else {
+      _isHolding = false;
+      _holdLocked = false;
+      setState(() {});
+      widget.onRelease?.call();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Stack(
       clipBehavior: Clip.none,
+      alignment: Alignment.center,
       children: [
         if (_holdLocked)
           Positioned(
-            left: 0,
-            right: 0,
-            bottom: 130,
+            bottom: 110,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 6
+              ),
               decoration: BoxDecoration(
                 color: ColorScheme.of(context).surfaceBright,
                 borderRadius: BorderRadius.circular(20),
@@ -60,15 +116,17 @@ class _HoldBtnState extends State<HoldBtn> {
                 ],
               ),
               child: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.lock, size: 16, color: ColorScheme.of(context).onSurfaceVariant),
-                  const SizedBox(width: 6),
+                  Icon(
+                    Icons.lock,
+                    size: 16,
+                    color: ColorScheme.of(context).onSurfaceVariant
+                  ),
+                  const SizedBox(width: Spacing.s1),
                   Text(
                     'Holding',
-                    style: TextStyle(
-                      color: ColorScheme.of(context).onSurfaceVariant,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: TextTheme.of(context).labelMedium
                   ),
                 ],
               )
@@ -77,49 +135,11 @@ class _HoldBtnState extends State<HoldBtn> {
         Container(
           alignment: Alignment.center,
           child: GestureDetector(
-            onTapDown: (details) {
-              _isHolding = true;
-              setState(() {});
-              HapticFeedback.mediumImpact();
-              widget.onHold?.call();
-            },
-            onPanUpdate: (details) {
-              // Detect upward swipe (negative dy)
-              if (details.delta.dy < -5 && !_isHolding) {
-                _isHolding = true;
-                _holdLocked = true;
-                setState(() {});
-                HapticFeedback.mediumImpact();
-                widget.onHolding?.call();
-              }
-            },
-            onPanEnd: (details) {
-              // If user swiped upward, keep holding
-              // If not, release
-              if (_isHolding) {
-                // Do nothing, stays holding
-              } else {
-                _isHolding = false;
-                _holdLocked = false;
-                setState(() {});
-                widget.onRelease?.call();
-              }
-            },
-            onTapUp: (details) {
-              // Release only if not locked in holding
-              if (_isHolding && !_holdLocked) {
-                _isHolding = false;
-                setState(() {});
-                widget.onRelease?.call();
-              }
-            },
-            onTapCancel: () {
-              if (_isHolding) {
-                _isHolding = false;
-                setState(() {});
-                widget.onRelease?.call();
-              }
-            },
+            onTapDown: onTapDown,
+            onPanUpdate: onPanUpdate,
+            onPanEnd: onPanEnd,
+            onTapUp: onTapUp,
+            onTapCancel: onTapCancel,
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               curve: Curves.easeInBack,

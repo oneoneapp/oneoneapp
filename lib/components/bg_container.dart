@@ -5,13 +5,13 @@ import 'package:flutter/material.dart';
 class BgContainer extends StatefulWidget {
   final bool displayMargin;
   final bool isShaking;
-  final String imageUrl;
+  final String? imageUrl;
 
   const BgContainer({
     super.key,
     this.displayMargin = false,
     this.isShaking = false,
-    required this.imageUrl
+    this.imageUrl
   });
 
   @override
@@ -70,9 +70,9 @@ class _BgContainerState extends State<BgContainer> with SingleTickerProviderStat
         margin: widget.displayMargin
           ? const EdgeInsets.only(
             top: 70,
-            right: 40,
-            left: 40,
-            bottom: 40
+            right: 20,
+            left: 20,
+            bottom: 20
           )
           : null,
         clipBehavior: widget.displayMargin
@@ -91,10 +91,11 @@ class _BgContainerState extends State<BgContainer> with SingleTickerProviderStat
         child: Stack(
           fit: StackFit.expand,
           children: [
-            Image.network(
-              widget.imageUrl,
-              fit: BoxFit.cover,
-            ),
+            if (widget.imageUrl != null && widget.imageUrl!.isNotEmpty)
+              Image.network(
+                widget.imageUrl!,
+                fit: BoxFit.cover,
+              ),
             BackdropFilter(
               filter: ImageFilter.blur(
                 sigmaX: blurStrength,
