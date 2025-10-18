@@ -1,11 +1,10 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:one_one/core/config/logging.dart';
-import 'package:one_one/providers/fcm_provider.dart';
 import 'package:one_one/services/api_service.dart';
+import 'package:one_one/services/fcm_service.dart';
 import 'package:one_one/services/user_service.dart';
 
 enum UserAuthStatus {
@@ -17,18 +16,18 @@ enum UserAuthStatus {
 
 class AuthService {
   final ApiService apiService;
+  final FcmService fcmService;
   
   AuthService({
     required this.apiService,
+    required this.fcmService
   });
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
-  String? _fcmToken;
 
   void init() {
     _initializeFirebase();
-    _setupFCM();
     _checkGoogleSignInConfiguration();
   }
 
@@ -46,28 +45,6 @@ class AuthService {
     _googleSignIn.initialize(
       clientId: '372494251881-dekm0ari0d01uvqm48fifam7f1pu6dne.apps.googleusercontent.com',
     );
-    FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-  }
-
-  Future<void> _setupFCM() async {
-    try {
-      await FirebaseMessaging.instance.requestPermission();
-      final token = await FirebaseMessaging.instance.getToken();
-      _fcmToken = token;
-      logger.debug("FCM Token: $_fcmToken");
-
-      FirebaseMessaging.onMessage.listen((message) async {
-        logger.info("Foreground message: ${message.data}");
-        await connectToServer(message);
-      });
-
-      FirebaseMessaging.onMessageOpenedApp.listen((message) async {
-        logger.info("Message opened from background");
-        await connectToServer(message);
-      });
-    } catch (e) {
-      logger.error("Error setting up FCM: $e");
-    }
   }
 
   Future<User?> _signInWithGoogle() async {
@@ -141,7 +118,7 @@ class AuthService {
           'name': user.displayName,
           'email': user.email,
           'photoUrl': user.photoURL,
-          'fcmToken': _fcmToken,
+          'fcmToken': await fcmService.getFcmToken(),
         },
       );
 

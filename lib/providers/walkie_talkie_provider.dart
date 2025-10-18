@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:one_one/core/config/locator.dart';
 import 'package:one_one/core/config/logging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:socket_io_client/socket_io_client.dart';
@@ -41,10 +40,6 @@ class WalkieTalkieProvider extends ChangeNotifier {
   }
 
   Future<void> initialize() async {
-    await loc<ApiService>().get(
-      "friend/list",
-      authenticated: true
-    );
     await _initializeSocket();
   }
 
@@ -68,6 +63,8 @@ class WalkieTalkieProvider extends ChangeNotifier {
       });
 
       setupSocketListeners();
+      setupWebRTCListeners();
+      socket.connect();
     } catch (e) {
       logger.error('Socket initialization error: $e');
     }
@@ -117,8 +114,6 @@ class WalkieTalkieProvider extends ChangeNotifier {
       connectedUsers.removeWhere((user) => user['code'] == data['uniqueCode']);
       notifyListeners();
     });
-
-    setupWebRTCListeners();
   }
 
   void setupWebRTCListeners() {
@@ -190,7 +185,7 @@ class WalkieTalkieProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void>  autoAcceptCall(Map data) async {
+  Future<void> autoAcceptCall(Map data) async {
     await initializePeerConnection();
     await peerConnection!.setRemoteDescription(
       RTCSessionDescription(data['sdp'], 'offer'),
