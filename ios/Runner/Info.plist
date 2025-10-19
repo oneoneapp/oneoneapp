@@ -6,7 +6,6 @@
 		<string>[YOUR SERVER CLIENT ID]</string> -->
 		<key>GIDClientID</key>
 		<string>615995801871-i6mo2et5eqlvioqomptrdvq3399hegmq.apps.googleusercontent.com</string>
-
 		<!-- Put me in the [my_project]/ios/Runner/Info.plist file -->
 		<!-- Google Sign-in Section -->
 		<key>CFBundleURLTypes</key>
@@ -26,7 +25,7 @@
 		<key>CFBundleDevelopmentRegion</key>
 		<string>$(DEVELOPMENT_LANGUAGE)</string>
 		<key>CFBundleDisplayName</key>
-	<string>One One</string>
+		<string>One One</string>
 		<key>CFBundleExecutable</key>
 		<string>$(EXECUTABLE_NAME)</string>
 		<key>CFBundleIdentifier</key>
@@ -34,7 +33,7 @@
 		<key>CFBundleInfoDictionaryVersion</key>
 		<string>6.0</string>
 		<key>CFBundleName</key>
-	<string>One One</string>
+		<string>One One</string>
 		<key>CFBundlePackageType</key>
 		<string>APPL</string>
 		<key>CFBundleShortVersionString</key>
