@@ -69,4 +69,28 @@ class ApiService {
       ),
     );
   }
+
+  Future<Response> put(
+    String url,
+    {
+      Map? body,
+      Map<String, dynamic>? headers,
+      bool authenticated = false
+    }
+  ) async {
+    if (authenticated) {
+      final String? idToken = await FirebaseAuth.instance.currentUser?.getIdToken();
+      headers ??= {};
+      headers.addAll({
+        'Authorization': 'Bearer $idToken'
+      });
+    }
+    return await dio.put(
+      url,
+      data: body,
+      options: Options(
+        headers: headers
+      ),
+    );
+  }
 }
