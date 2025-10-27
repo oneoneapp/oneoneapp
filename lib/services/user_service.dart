@@ -77,8 +77,15 @@ class UserService {
 
   // Store user data locally
   static Future<void> _storeUserData(Map<String, dynamic> userData) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_userDataKey, json.encode(userData));
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final jsonString = json.encode(userData);
+      await prefs.setString(_userDataKey, jsonString);
+      logger.debug('User data stored successfully');
+    } catch (e) {
+      logger.error('Error storing user data: $e');
+      throw e;
+    }
   }
 
   // Get locally stored user data
@@ -87,8 +94,15 @@ class UserService {
       final prefs = await SharedPreferences.getInstance();
       final userDataString = prefs.getString(_userDataKey);
       
-      if (userDataString != null) {
-        return json.decode(userDataString);
+      if (userDataString != null && userDataString.isNotEmpty) {
+        try {
+          return json.decode(userDataString);
+        } catch (jsonError) {
+          logger.error('Error parsing user data JSON: $jsonError');
+          // Clear invalid data
+          await prefs.remove(_userDataKey);
+          return null;
+        }
       }
       return null;
     } catch (e) {
@@ -153,11 +167,40 @@ class UserService {
   }
 
   static Future<void> updateUserData(Map<String, dynamic> updatedData) async {
-    await _storeUserRegistrationStatus(true);
-    await _storeUserData(updatedData);
-    
-    // Refresh the router to pick up the updated user data
-    AppRouter.refreshRouter();
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final token = await user.getIdToken();
+        
+        // Try to update on backend first
+        try {
+          final response = await loc<ApiService>().put(
+            'user/profile',
+            body: updatedData,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+            },
+          );
+          
+          if (response.statusCode == 200 || response.statusCode == 201) {
+            logger.debug('Profile updated successfully on backend');
+          }
+        } catch (e) {
+          logger.warning('Failed to update profile on backend, continuing with local update: $e');
+        }
+      }
+      
+      // Update local data regardless of backend success
+      await _storeUserRegistrationStatus(true);
+      await _storeUserData(updatedData);
+      
+      // Refresh the router to pick up the updated user data
+      AppRouter.refreshRouter();
+    } catch (e) {
+      logger.error('Error updating user data: $e');
+      throw e;
+    }
   }
 
   // Clear local user data (for logout or data reset)

@@ -25,7 +25,7 @@ class _BgContainerState extends State<BgContainer> with SingleTickerProviderStat
   static const Duration duration = Duration(milliseconds: 500);
   static const double angle = 0.05; // in radians (0.05 ≈ 3°);
   static const Duration pause = Duration(milliseconds: 300);
-  static const double blurStrength = 2;
+  static const double blurStrength = 0;
 
   @override
   void initState() {

@@ -165,7 +165,10 @@ class _HoldBtnState extends State<HoldBtn> {
                     ? ColorScheme.of(context).onSurfaceVariant
                     : ColorScheme.of(context).onSurfaceVariant.withValues(alpha: 0.9),
                   image: widget.image != null
-                    ? DecorationImage(image: NetworkImage(widget.image!))
+                    ? DecorationImage(
+                        image: NetworkImage(widget.image!),
+                        fit: BoxFit.cover,
+                      )
                     : null,
                 ),
               ),

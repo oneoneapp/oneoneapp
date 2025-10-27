@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:one_one/components/add_frnd_btn.dart';
 import 'package:one_one/components/bg_container.dart';
 import 'package:one_one/components/center_snap_scroll.dart';
@@ -43,7 +44,7 @@ class _HomePageState extends State<HomePage> {
   Friend? get selectedAvatar {
     if (centerSnapScrollController.hasClients) {
       final homeProvider = Provider.of<HomeProvider>(context, listen: false);
-      final int index = (centerSnapScrollController.page ?? 0).toInt() - 1;
+      final int index = (centerSnapScrollController.page ?? 1).toInt() - 1;
       if (index >= 0 && index < homeProvider.friends.length) {
         return homeProvider.friends[index];
       }
@@ -75,6 +76,33 @@ class _HomePageState extends State<HomePage> {
                 ],
                 stops: const [0.1, 0.9],
               )
+            ),
+          ),
+          // Profile icon in top left
+          Positioned(
+            top: 60,
+            left: 20,
+            child: GestureDetector(
+              onTap: () {
+                context.push('/profile');
+              },
+              child: Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(25),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.3),
+                    width: 1,
+                  ),
+                ),
+                child: Icon(
+                  Icons.person,
+                  color: Colors.white,
+                  size: 30,
+                ),
+              ),
             ),
           ),
           Positioned.fill(

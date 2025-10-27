@@ -6,7 +6,7 @@ import 'package:talker_dio_logger/talker_dio_logger_settings.dart';
 class ApiService {
   late String baseUrl;
   final String baseUrlRemote = "https://api.oneoneapp.in/";
-  final String baseUrlLocal = "http://192.168.1.244:5050/";
+  final String baseUrlLocal = "http://192.168.220.13:5050/";
   final Dio dio = Dio();
 
   void init() {
@@ -65,6 +65,30 @@ class ApiService {
       });
     }
     return await dio.post(
+      url,
+      data: body,
+      options: Options(
+        headers: headers
+      ),
+    );
+  }
+
+  Future<Response> put(
+    String url,
+    {
+      Map? body,
+      Map<String, dynamic>? headers,
+      bool authenticated = false
+    }
+  ) async {
+    if (authenticated) {
+      final String? idToken = await FirebaseAuth.instance.currentUser?.getIdToken();
+      headers ??= {};
+      headers.addAll({
+        'Authorization': 'Bearer $idToken'
+      });
+    }
+    return await dio.put(
       url,
       data: body,
       options: Options(

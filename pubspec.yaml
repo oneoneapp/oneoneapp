@@ -21,6 +21,7 @@ dependencies:
   firebase_auth: ^6.0.1
   google_sign_in: ^7.1.1
   image_picker: ^1.0.7
+  image_cropper: ^11.0.0
   flutter_launcher_icons: ^0.14.4
   flutter_native_splash: ^2.2.16
   dio: ^5.9.0
