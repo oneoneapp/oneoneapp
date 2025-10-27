@@ -4,30 +4,45 @@ import 'package:one_one/core/config/locator.dart';
 import 'package:one_one/core/config/routing.dart';
 import 'package:one_one/core/theme/theme.dart';
 import 'package:one_one/providers/home_provider.dart';
+import 'package:one_one/services/foreground_service.dart';
 import 'package:provider/provider.dart';
 import 'package:one_one/providers/walkie_talkie_provider.dart';
 import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  ForegroundService.initCommunicationPort();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  setupLocator();
+  await setupLocator();
   runApp(
     OneOneApp()
   );
 }
 
-class OneOneApp extends StatelessWidget {
+class OneOneApp extends StatefulWidget {
   const OneOneApp({super.key});
 
+  @override
+  State<OneOneApp> createState() => _OneOneAppState();
+}
+
+class _OneOneAppState extends State<OneOneApp> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ForegroundService.requestPermissions();
+      ForegroundService.initService();
+    });
+  }
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => WalkieTalkieProvider()),
-        ChangeNotifierProvider(create: (_) => HomeProvider()),
+        ChangeNotifierProvider(create: (_) => loc<WalkieTalkieProvider>()),
+        ChangeNotifierProvider(create: (_) => loc<HomeProvider>()),
       ],
       child: MaterialApp.router(
         title: 'OneOne',
