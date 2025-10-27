@@ -1,16 +1,13 @@
 import 'package:dio/dio.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:one_one/core/config/baseurl.dart';
 import 'package:talker_dio_logger/talker_dio_logger_interceptor.dart';
 import 'package:talker_dio_logger/talker_dio_logger_settings.dart';
 
 class ApiService {
-  late String baseUrl;
-  final String baseUrlRemote = "https://api.oneoneapp.in/";
-  final String baseUrlLocal = "http://192.168.1.244:5050/";
   final Dio dio = Dio();
 
   void init() {
-    baseUrl = baseUrlRemote;
     dio.options.baseUrl = baseUrl;
     dio.options.headers['Content-Type'] = 'application/json';
     dio.options.validateStatus = (status) {
