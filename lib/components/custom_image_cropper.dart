@@ -22,7 +22,6 @@ class _CustomImageCropperState extends State<CustomImageCropper> {
   final TransformationController _transformationController = TransformationController();
   
   late Size _imageSize;
-  late Size _screenSize;
   bool _isImageLoaded = false;
   bool _isCropping = false;
 
@@ -58,7 +57,6 @@ class _CustomImageCropperState extends State<CustomImageCropper> {
       if (!mounted) return;
       
       final screenSize = MediaQuery.of(context).size;
-      _screenSize = screenSize;
       
       // Calculate the scale to fit the image properly with some initial zoom
       final scaleX = screenSize.width / _imageSize.width;

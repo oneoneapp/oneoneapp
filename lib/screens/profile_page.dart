@@ -6,7 +6,6 @@ import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 // import 'package:image_cropper/image_cropper.dart'; // Temporarily disabled due to plugin issues
 import 'package:one_one/components/custom_image_cropper.dart';
-import 'package:one_one/core/config/locator.dart';
 import 'package:one_one/services/user_service.dart';
 
 class ProfilePage extends StatefulWidget {
