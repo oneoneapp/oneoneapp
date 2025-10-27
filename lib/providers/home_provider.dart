@@ -1,14 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:one_one/core/config/locator.dart';
 import 'package:one_one/models/friend.dart';
+import 'package:one_one/providers/walkie_talkie_provider.dart';
 
 class HomeProvider extends ChangeNotifier {
+  final WalkieTalkieProvider walkieTalkieProvider;
+
+  HomeProvider({
+    required this.walkieTalkieProvider,
+  }) {
+    fetchFrndsList();
+    walkieTalkieProvider.onConnectedUser.stream.listen((data) {
+      fetchFrndsList();
+    });
+  }
+
   final List<Friend> _friends = [];
   final List<Friend> _pendingRequests = [];
-
-  HomeProvider() {
-    fetchFrndsList();
-  }
 
   void fetchFrndsList() async {
     try {

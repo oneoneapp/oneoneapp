@@ -1,143 +1,121 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:one_one/core/config/baseurl.dart';
 import 'package:one_one/core/config/logging.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:socket_io_client/socket_io_client.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
-import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:one_one/services/socket_service.dart';
 
 class WalkieTalkieProvider extends ChangeNotifier {
   late Socket socket;
-  final SocketHandler _socketHandler = SocketHandler();
+  late StreamController onConnectedUser;
 
-  String userName = '';
   String uniqueCode = '';
-  String connectedUserName = '';
-  String connectedUserCode = '';
-  List<Map<String, String>> connectedUsers = [];
+
   MediaStream? localStream;
   MediaStream? remoteStream;
   RTCPeerConnection? peerConnection;
-  List<Map<String, String>> messages = [];
+
   bool isCallActive = false;
   bool isConnected = false;
 
-  Future<void> saveToLocalStorage(String key, String value) async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    logger.debug(value);
-    await prefs.setString(key, value);
-  }
-
-  Future<String?> readFromLocalStorage(String key) async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-
-    return prefs.getString(key);
-  }
-
-  WalkieTalkieProvider() {
-    initialize();
-  }
-
   Future<void> initialize() async {
+    onConnectedUser = StreamController.broadcast();
     await _initializeSocket();
   }
 
   Future<void> _initializeSocket() async {
     try {
-      _socketHandler.initSocket();
-      socket = _socketHandler.socket!;
-
-      socket.onConnect((_) async {
+      socket = io(
+        baseUrl,
+        {
+          'transports': ['websocket'],
+          'autoConnect': true,
+          'forceNew': true,
+          'reconnection': true,
+          'reconnectionAttempts': 10000,
+        }
+      );
+      socket.connect();
+      socket.onConnect((_) {
         isConnected = true;
-        
+        final String firebaseUid = FirebaseAuth.instance.currentUser?.uid ?? '';
+        logger.debug(firebaseUid);
         socket.emit('connect-user',{
-          'uid': FirebaseAuth.instance.currentUser?.uid,
-          'name': userName,
+          'uid': firebaseUid,
         });
-        debugPrint('Socket connected');
+        logger.info('Socket connected');
       });
       socket.onDisconnect((_) {
         isConnected = false;
         logger.info('Socket disconnected');
       });
 
-      setupSocketListeners();
-      setupWebRTCListeners();
+      _setupSocketListeners();
+      _setupWebRTCListeners();
       socket.connect();
     } catch (e) {
       logger.error('Socket initialization error: $e');
     }
   }
 
-  void setupSocketListeners() {
+  void _setupSocketListeners() {
     socket.on('your-unique-code', (code) {
+      logger.debug('Unique code created:: $code');
       uniqueCode = code;
-      saveToLocalStorage("uniqueCode", code);
       notifyListeners();
     });
 
     socket.on('user-connected', (data) {
-      if (data['uniqueCode'] != uniqueCode) {
-        connectedUsers.add({
-          'name': data['name'],
-          'code': data['uniqueCode'],
-        });
-        notifyListeners();
-      }
-    });
-
-    socket.on('connected-users', (data) {
-      connectedUsers.clear();
-      connectedUsers.addAll(
-        List<Map<String, String>>.from(
-          (data as List).map((user) => {
-                'name': user['name'] as String,
-                'code': user['uniqueCode'] as String,
-              }),
-        ),
-      );
+      logger.debug('User connected: $data');
+      onConnectedUser.add(data);
       notifyListeners();
     });
 
-    socket.on('receive-message', (data) {
-      if (data['receiver'] == uniqueCode) {
-        messages.add({
-          'text': data['text'],
-          'sender': data['sender'],
-        });
-        notifyListeners();
-      }
-    });
-
     socket.on('user-disconnected', (data) {
-      connectedUsers.removeWhere((user) => user['code'] == data['uniqueCode']);
+      logger.debug('User disconnected: $data');
+      onConnectedUser.add(data);
       notifyListeners();
     });
   }
 
-  void setupWebRTCListeners() {
+  void _setupWebRTCListeners() {
     socket.on('offer', (data) async {
-      logger.info('Offer received:: $data');
+      logger.debug('Offer received');
+      logger.debug(data);
       if (data['receiver'] == uniqueCode) {
-        await autoAcceptCall(data);
+        await receiveCall(data['sdp'], data['sender']);
       }
     });
 
     socket.on('answer', (data) async {
+      logger.debug('Answer recieved');
+      logger.debug(data);
       if (data['receiver'] == uniqueCode) {
-        await handleAnswer(data);
+        // handle answer
+        await peerConnection?.setRemoteDescription(
+          RTCSessionDescription(data['sdp'], 'answer'),
+        );
       }
     });
 
     socket.on('ice-candidate', (data) async {
+      logger.info('ICE candidate received');
+      logger.debug(data);
       if (data['receiver'] == uniqueCode) {
-        await handleIceCandidate(data);
+        // handle ICE candidate
+        await peerConnection?.addCandidate(
+          RTCIceCandidate(
+            data['candidate'],
+            data['sdpMid'],
+            data['sdpMLineIndex'],
+          ),
+        );
       }
     });
   }
 
-  Future<void> initializePeerConnection() async {
+  Future<void> _initializePeerConnection(String userCode, {bool audio = true}) async {
     final config = {
       'iceServers': [
         {'urls': 'stun:stun.l.google.com:19302'},
@@ -153,8 +131,9 @@ class WalkieTalkieProvider extends ChangeNotifier {
         'sdpMid': candidate.sdpMid,
         'sdpMLineIndex': candidate.sdpMLineIndex,
         'sender': uniqueCode,
-        'receiver': connectedUserCode,
+        'receiver': userCode,
       });
+      logger.info('ICE candidate sent');
     };
 
     peerConnection!.onTrack = (event) {
@@ -162,33 +141,39 @@ class WalkieTalkieProvider extends ChangeNotifier {
       notifyListeners();
     };
 
-    localStream = await navigator.mediaDevices
-        .getUserMedia({'audio': true, 'video': false});
+    if (audio) {
+      await _addLocalStreamToPeer();
+    }
+  }
 
+  Future<void> _addLocalStreamToPeer() async {
+    localStream = await navigator.mediaDevices.getUserMedia({
+      'audio': true,
+      'video': false
+    });
     localStream!.getTracks().forEach((track) {
       peerConnection!.addTrack(track, localStream!);
     });
   }
 
-  Future<void> startCall(String code) async {
-    await initializePeerConnection();
+  Future<void> startCall(String code, {bool audio = true}) async {
+    await _initializePeerConnection(code, audio: audio);
     final offer = await peerConnection!.createOffer();
     await peerConnection!.setLocalDescription(offer);
-    connectedUserCode = code;
     socket.emit('offer', {
       'sdp': offer.sdp,
-      'sender': await readFromLocalStorage("uniqueCode") ?? uniqueCode,
-      'receiver': connectedUserCode,
+      'sender': uniqueCode,
+      'receiver': code,
     });
 
     isCallActive = true;
     notifyListeners();
   }
 
-  Future<void> autoAcceptCall(Map data) async {
-    await initializePeerConnection();
+  Future<void> receiveCall(String sdp, String sender) async {
+    await _initializePeerConnection(sender);
     await peerConnection!.setRemoteDescription(
-      RTCSessionDescription(data['sdp'], 'offer'),
+      RTCSessionDescription(sdp, 'offer'),
     );
 
     final answer = await peerConnection!.createAnswer();
@@ -197,37 +182,14 @@ class WalkieTalkieProvider extends ChangeNotifier {
     socket.emit('answer', {
       'sdp': answer.sdp,
       'sender': uniqueCode,
-      'receiver': data['sender'],
+      'receiver': sender,
     });
 
-    connectedUserCode = data['sender'];
     isCallActive = true;
     notifyListeners();
   }
 
-  Future<void> handleAnswer(Map data) async {
-    await peerConnection?.setRemoteDescription(
-      RTCSessionDescription(data['sdp'], 'answer'),
-    );
-  }
-
-  Future<void> handleIceCandidate(Map data) async {
-    await peerConnection?.addCandidate(
-      RTCIceCandidate(
-        data['candidate'],
-        data['sdpMid'],
-        data['sdpMLineIndex'],
-      ),
-    );
-  }
-
-  void connectToUser(String code, String name) {
-    connectedUserCode = code;
-    connectedUserName = name;
-    notifyListeners();
-  }
-
-  void disposeResources() {
+  void endCall() {
     localStream?.dispose();
     remoteStream?.dispose();
     peerConnection?.dispose();
@@ -235,10 +197,22 @@ class WalkieTalkieProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  bool get isMuted {
+    if (localStream == null) return false;
+    return !(localStream!.getAudioTracks().first.enabled);
+  }
+
+  void muteCall() {
+    localStream?.getAudioTracks().forEach((track) {
+      track.enabled = !track.enabled;
+    });
+    notifyListeners();
+  }
+
   @override
   void dispose() {
-    disposeResources();
-    FlutterForegroundTask.stopService();
+    endCall();
+    onConnectedUser.close();
     socket.disconnect();
     super.dispose();
   }
