@@ -6,11 +6,49 @@ import 'package:socket_io_client/socket_io_client.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+// Friend model for socket friends data
+class SocketFriend {
+  final String name;
+  final String uid;
+  final String status; // 'online' or 'offline'
+
+  SocketFriend({
+    required this.name,
+    required this.uid,
+    required this.status,
+  });
+
+  factory SocketFriend.fromMap(Map<String, dynamic> map) {
+    return SocketFriend(
+      name: map['name'] ?? '',
+      uid: map['uid'] ?? '',
+      status: map['status'] ?? 'offline',
+    );
+  }
+
+  SocketFriend copyWith({
+    String? name,
+    String? uid,
+    String? status,
+    bool? isOnline,
+  }) {
+    return SocketFriend(
+      name: name ?? this.name,
+      uid: uid ?? this.uid,
+      status: isOnline != null ? (isOnline ? 'online' : 'offline') : (status ?? this.status),
+    );
+  }
+
+  bool get isOnline => status == 'online';
+}
+
 class WalkieTalkieProvider extends ChangeNotifier {
   late Socket socket;
   late StreamController onConnectedUser;
+  late StreamController onDisconnectedUser;
 
   String uniqueCode = '';
+  List<SocketFriend> _friendsList = [];
 
   MediaStream? localStream;
   MediaStream? remoteStream;
@@ -19,8 +57,12 @@ class WalkieTalkieProvider extends ChangeNotifier {
   bool isCallActive = false;
   bool isConnected = false;
 
+  // Getter for friends list
+  List<SocketFriend> get friendsList => _friendsList;
+
   Future<void> initialize() async {
     onConnectedUser = StreamController.broadcast();
+    onDisconnectedUser = StreamController.broadcast();
     await _initializeSocket();
   }
 
@@ -73,22 +115,83 @@ class WalkieTalkieProvider extends ChangeNotifier {
       notifyListeners();
     });
 
-    socket.on('user-connected', (data) {
-      logger.debug('User connected: $data');
-      onConnectedUser.add(data);
-      notifyListeners();
-    });
+  socket.on('user-connected', (data) {
+    logger.debug('User connected: $data');
+    // Update the friend's status to online if they're in your friends list
+    _updateFriendStatus(data['uid'], true);
+    onConnectedUser.add(data);
+    notifyListeners();
+  });
 
-    socket.on('user-disconnected', (data) {
-      logger.debug('User disconnected: $data');
-      onConnectedUser.add(data);
-      notifyListeners();
-    });
+  socket.on('user-disconnected', (data) {
+    logger.debug('User disconnected: $data');
+    // Update the friend's status to offline if they're in your friends list
+    _updateFriendStatus(data['uid'], false);
+    onDisconnectedUser.add(data); // You probably want a separate stream for disconnections
+    notifyListeners();
+  });
 
     socket.on('friends-list', (data) {
       logger.debug('Friends list received: $data');
+      _updateFriendsList(data);
       notifyListeners();
     });
+  }
+
+void _updateFriendStatus(String uid, bool isOnline) {
+  try {
+    final friendIndex = _friendsList.indexWhere((friend) => friend.uid == uid);
+    if (friendIndex != -1) {
+      // Update the friend's online status
+      _friendsList[friendIndex] = _friendsList[friendIndex].copyWith(isOnline: isOnline);
+      logger.debug('Updated friend $uid status to ${isOnline ? "online" : "offline"}');
+    }
+  } catch (e) {
+    logger.error('Error updating friend status: $e');
+  }
+}
+
+  void _updateFriendsList(dynamic data) {
+    try {
+      _friendsList.clear();
+      if (data is List) {
+        for (var friendData in data) {
+          if (friendData is Map<String, dynamic>) {
+            _friendsList.add(SocketFriend.fromMap(friendData));
+          }
+        }
+      }
+      logger.debug('Updated friends list: ${_friendsList.length} friends');
+    } catch (e) {
+      logger.error('Error updating friends list: $e');
+    }
+  }
+
+  // Method to get friend's online status by UID
+  bool isFriendOnline(String uid) {
+    try {
+      final friend = _friendsList.firstWhere((friend) => friend.uid == uid);
+      return friend.isOnline;
+    } catch (e) {
+      return false; // Friend not found or offline
+    }
+  }
+
+  // Method to get friend by UID
+  SocketFriend? getFriendByUid(String uid) {
+    try {
+      return _friendsList.firstWhere((friend) => friend.uid == uid);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  // Method to start call using Firebase UID (this might need server support)
+  Future<void> startCallByUid(String firebaseUid, {bool audio = true}) async {
+    // For now, we'll need to use the socketId if available
+    // This is a placeholder - the server should ideally support calling by Firebase UID
+    logger.warning('startCallByUid called with $firebaseUid - server should support this');
+    // TODO: Implement server-side support for calling by Firebase UID
   }
 
   void _setupWebRTCListeners() {
@@ -225,6 +328,7 @@ class WalkieTalkieProvider extends ChangeNotifier {
   void dispose() {
     endCall();
     onConnectedUser.close();
+    onDisconnectedUser.close();
     socket.disconnect();
     super.dispose();
   }

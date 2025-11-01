@@ -6,6 +6,7 @@ import 'package:one_one/core/config/logging.dart';
 import 'package:one_one/screens/home_page.dart';
 import 'package:one_one/screens/login_page.dart';
 import 'package:one_one/screens/profile_page.dart';
+import 'package:one_one/screens/friends_list_page.dart';
 import 'package:one_one/screens/setup/setup_page.dart';
 import 'package:one_one/services/user_service.dart';
 
@@ -71,6 +72,13 @@ class AppRouter {
         path: "/profile",
         builder: (context, state) {
           return const ProfilePage();
+        },
+      ),
+      GoRoute(
+        name: "friends",
+        path: "/friends",
+        builder: (context, state) {
+          return const FriendsListPage();
         },
       ),
     ],

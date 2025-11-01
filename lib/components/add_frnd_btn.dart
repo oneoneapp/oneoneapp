@@ -3,7 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:one_one/core/config/locator.dart';
 import 'package:one_one/models/friend.dart';
 import 'package:one_one/providers/home_provider.dart';
+import 'package:one_one/providers/walkie_talkie_provider.dart';
 import 'package:one_one/services/user_service.dart';
+import 'package:one_one/components/online_status_dot.dart';
 import 'package:provider/provider.dart';
 
 class AddFrndBtn extends StatelessWidget {
@@ -71,12 +73,46 @@ class Page extends StatelessWidget {
             homeProvider.friends.length,
             (index) {
               final friend = homeProvider.friends[index];
-              return ListTile(
-                leading: CircleAvatar(
-                  backgroundImage: NetworkImage(friend.photoUrl),
-                ),
-                title: Text(friend.name),
-                subtitle: Text(friend.uniqueCode),
+              return Consumer<HomeProvider>(
+                builder: (context, homeProvider, child) {
+                  final isOnline = homeProvider.isFriendOnline(friend.id);
+                  return ListTile(
+                    leading: Stack(
+                      children: [
+                        CircleAvatar(
+                          backgroundImage: NetworkImage(friend.photoUrl),
+                        ),
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: OnlineStatusDot(
+                            isOnline: isOnline,
+                            size: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                    title: Text(friend.name),
+                    subtitle: Row(
+                      children: [
+                        Expanded(
+                          child: Text(friend.uniqueCode),
+                        ),
+                        const SizedBox(width: 8),
+                        OnlineStatusRow(isOnline: isOnline),
+                      ],
+                    ),
+                    trailing: isOnline
+                        ? const Icon(
+                            Icons.call,
+                            color: Colors.green,
+                          )
+                        : Icon(
+                            Icons.call,
+                            color: Colors.grey[600],
+                          ),
+                  );
+                },
               );
             }
           )

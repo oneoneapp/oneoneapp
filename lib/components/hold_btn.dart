@@ -6,6 +6,7 @@ class HoldBtn extends StatefulWidget {
   final String? image;
   final bool? isHolding;
   final bool enabled;
+  final bool isOnline;
   final Function()? onHold;
   final Function()? onHolding;
   final Function()? onRelease;
@@ -15,6 +16,7 @@ class HoldBtn extends StatefulWidget {
     this.image,
     this.isHolding,
     this.enabled = true,
+    this.isOnline = false,
     this.onHold,
     this.onHolding,
     this.onRelease
@@ -173,6 +175,30 @@ class _HoldBtnState extends State<HoldBtn> {
                 ),
               ),
             )
+          ),
+        ),
+        // Status indicator - always show (green if online, gray if offline)
+        Positioned(
+          top: _isHolding ? 8 : 3,
+          right: _isHolding ? 8 : 3,
+          child: Container(
+            width: 16,
+            height: 16,
+            decoration: BoxDecoration(
+              color: widget.isOnline ? Colors.green : Colors.grey,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: Colors.white,
+                width: 2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
           ),
         ),
       ],

@@ -105,15 +105,87 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
           ),
+          // Friends list icon in top right
+          Positioned(
+            top: 60,
+            right: 20,
+            child: GestureDetector(
+              onTap: () {
+                context.push('/friends');
+              },
+              child: Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(25),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.3),
+                    width: 1,
+                  ),
+                ),
+                child: Consumer<WalkieTalkieProvider>(
+                  builder: (context, provider, child) {
+                    final onlineFriendsCount = provider.friendsList
+                        .where((friend) => friend.isOnline)
+                        .length;
+                    
+                    return Stack(
+                      children: [
+                        Center(
+                          child: Icon(
+                            Icons.people,
+                            color: Colors.white,
+                            size: 30,
+                          ),
+                        ),
+                        if (onlineFriendsCount > 0)
+                          Positioned(
+                            top: 5,
+                            right: 5,
+                            child: Container(
+                              width: 16,
+                              height: 16,
+                              decoration: BoxDecoration(
+                                color: Colors.green,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 2,
+                                ),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  '$onlineFriendsCount',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
           Positioned.fill(
             top: null,
             bottom: 50,
-            child: CenterSnapScroll(
-              controller: centerSnapScrollController,
-              children: [
-                AddFrndBtn(),
-                ...frndsAvatars(homeProvider, provider)
-              ],
+            child: Consumer<WalkieTalkieProvider>(
+              builder: (context, walkieTalkieProvider, child) {
+                return CenterSnapScroll(
+                  controller: centerSnapScrollController,
+                  children: [
+                    AddFrndBtn(),
+                    ...frndsAvatars(homeProvider, walkieTalkieProvider)
+                  ],
+                );
+              },
             ),
           ),
         ],
@@ -126,22 +198,33 @@ class _HomePageState extends State<HomePage> {
       homeProvider.friends.length,
       (index) {
         final friend = homeProvider.friends[index];
+        
+        // Check if friend is online by matching firebaseUid
+        bool isOnline = false;
+        if (friend.firebaseUid != null) {
+          isOnline = provider.friendsList
+              .any((socketFriend) => socketFriend.uid == friend.firebaseUid && socketFriend.isOnline);
+        }
+        
         return HoldBtn(
           image: friend.photoUrl,
+          isOnline: isOnline,
           onHold: () {
             setState(() {
               isHolding = true;
             });
-            if (friend.socketId != null) {
-              provider.startCall(friend.socketId!);
+            final socketCode = homeProvider.getFriendSocketCode(friend.id);
+            if (socketCode != null) {
+              provider.startCall(socketCode);
             }
           },
           onHolding: () {
             setState(() {
               isHolding = true;
             });
-            if (friend.socketId != null) {
-              provider.startCall(friend.socketId!);
+            final socketCode = homeProvider.getFriendSocketCode(friend.id);
+            if (socketCode != null) {
+              provider.startCall(socketCode);
             }
           },
           onRelease: () {

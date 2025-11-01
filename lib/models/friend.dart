@@ -4,13 +4,15 @@ class Friend {
   final String photoUrl;
   final String uniqueCode;
   final String? socketId;
+  final String? firebaseUid; // Firebase UID for socket mapping
 
   const Friend({
     required this.id,
     required this.name,
     required this.photoUrl,
     required this.uniqueCode,
-    required this.socketId
+    required this.socketId,
+    this.firebaseUid,
   });
 
   factory Friend.fromMap(Map map) {
@@ -19,7 +21,8 @@ class Friend {
       name: map['name'],
       photoUrl: map['photoUrl'],
       uniqueCode: map['uniqueCode'],
-      socketId: map['socketId']
+      socketId: map['socketId'],
+      firebaseUid: map['firebaseUid'] ?? map['uid'], // Handle both field names
     );
   }
 
@@ -29,7 +32,8 @@ class Friend {
       'name': name,
       'photoUrl': photoUrl,
       'uniqueCode': uniqueCode,
-      'socketId': socketId
+      'socketId': socketId,
+      'firebaseUid': firebaseUid,
     };
   }
 }
