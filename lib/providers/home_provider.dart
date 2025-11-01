@@ -9,10 +9,10 @@ class HomeProvider extends ChangeNotifier {
   HomeProvider({
     required this.walkieTalkieProvider,
   }) {
-    fetchFrndsList();
-    walkieTalkieProvider.onConnectedUser.stream.listen((data) {
-      fetchFrndsList();
-    });
+    // fetchFrndsList();
+    // walkieTalkieProvider.onConnectedUser.stream.listen((data) {
+    //   fetchFrndsList();
+    // });
   }
 
   final List<Friend> _friends = [];

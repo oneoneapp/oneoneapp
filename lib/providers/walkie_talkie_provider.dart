@@ -37,13 +37,20 @@ class WalkieTalkieProvider extends ChangeNotifier {
         }
       );
       socket.connect();
+
       socket.onConnect((_) {
         isConnected = true;
         final String firebaseUid = FirebaseAuth.instance.currentUser?.uid ?? '';
         logger.debug(firebaseUid);
         socket.emit('connect-user',{
+          'name': FirebaseAuth.instance.currentUser?.displayName ?? 'Anonymous',
           'uid': firebaseUid,
         });
+
+        socket.emit('get-friends-list',{
+          'uid': firebaseUid,
+        });
+
         logger.info('Socket connected');
       });
       socket.onDisconnect((_) {
@@ -60,8 +67,8 @@ class WalkieTalkieProvider extends ChangeNotifier {
   }
 
   void _setupSocketListeners() {
-    socket.on('your-unique-code', (code) {
-      logger.debug('Unique code created:: $code');
+    socket.on('socketId', (code) {
+      logger.debug('socketId created:: $code');
       uniqueCode = code;
       notifyListeners();
     });
@@ -75,6 +82,11 @@ class WalkieTalkieProvider extends ChangeNotifier {
     socket.on('user-disconnected', (data) {
       logger.debug('User disconnected: $data');
       onConnectedUser.add(data);
+      notifyListeners();
+    });
+
+    socket.on('friends-list', (data) {
+      logger.debug('Friends list received: $data');
       notifyListeners();
     });
   }
