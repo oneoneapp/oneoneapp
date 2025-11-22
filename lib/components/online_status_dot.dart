@@ -28,47 +28,13 @@ class OnlineStatusDot extends StatelessWidget {
         boxShadow: isOnline
             ? [
                 BoxShadow(
-                  color: Colors.green.withOpacity(0.3),
+                  color: Colors.green.withValues(alpha: 0.3),
                   blurRadius: 4,
                   spreadRadius: 1,
                 ),
               ]
             : null,
       ),
-    );
-  }
-}
-
-class OnlineStatusRow extends StatelessWidget {
-  final bool isOnline;
-  final TextStyle? textStyle;
-
-  const OnlineStatusRow({
-    super.key,
-    required this.isOnline,
-    this.textStyle,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        OnlineStatusDot(
-          isOnline: isOnline,
-          size: 8,
-        ),
-        const SizedBox(width: 6),
-        Text(
-          isOnline ? 'Online' : 'Offline',
-          style: textStyle ??
-              TextStyle(
-                color: isOnline ? Colors.green : Colors.grey[600],
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-              ),
-        ),
-      ],
     );
   }
 }

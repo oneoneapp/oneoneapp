@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:one_one/components/online_status_dot.dart';
 import 'package:one_one/core/shared/spacing.dart';
 
 class HoldBtn extends StatefulWidget {
@@ -177,30 +178,15 @@ class _HoldBtnState extends State<HoldBtn> {
             )
           ),
         ),
-        // Status indicator - always show (green if online, gray if offline)
-        Positioned(
-          top: _isHolding ? 8 : 3,
-          right: _isHolding ? 8 : 3,
-          child: Container(
-            width: 16,
-            height: 16,
-            decoration: BoxDecoration(
-              color: widget.isOnline ? Colors.green : Colors.grey,
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: Colors.white,
-                width: 2,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+        if (widget.isOnline)
+          Positioned(
+            bottom: _isHolding ? 16: 18,
+            right: _isHolding ? 2 : 5,
+            child: OnlineStatusDot(
+              isOnline: widget.isOnline,
+              size: 20,
             ),
           ),
-        ),
       ],
     );
   }
