@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:one_one/core/config/locator.dart';
 import 'package:one_one/models/friend.dart';
 import 'package:one_one/providers/home_provider.dart';
-import 'package:one_one/providers/walkie_talkie_provider.dart';
 import 'package:one_one/services/user_service.dart';
 import 'package:one_one/components/online_status_dot.dart';
 import 'package:provider/provider.dart';
@@ -63,6 +63,10 @@ class Page extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
+              IconButton(
+                icon: Icon(Icons.account_circle),
+                onPressed: () => context.push('/profile'),
+              ),
               SettingsBtn(),
             ],
           ),
@@ -75,42 +79,25 @@ class Page extends StatelessWidget {
               final friend = homeProvider.friends[index];
               return Consumer<HomeProvider>(
                 builder: (context, homeProvider, child) {
-                  final isOnline = homeProvider.isFriendOnline(friend.id);
                   return ListTile(
                     leading: Stack(
                       children: [
                         CircleAvatar(
                           backgroundImage: NetworkImage(friend.photoUrl),
                         ),
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: OnlineStatusDot(
-                            isOnline: isOnline,
-                            size: 14,
+                        if (friend.socketData?.isOnline ?? false)
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: OnlineStatusDot(
+                              isOnline: friend.socketData?.isOnline ?? false,
+                              size: 14,
+                            ),
                           ),
-                        ),
                       ],
                     ),
                     title: Text(friend.name),
-                    subtitle: Row(
-                      children: [
-                        Expanded(
-                          child: Text(friend.uniqueCode),
-                        ),
-                        const SizedBox(width: 8),
-                        OnlineStatusRow(isOnline: isOnline),
-                      ],
-                    ),
-                    trailing: isOnline
-                        ? const Icon(
-                            Icons.call,
-                            color: Colors.green,
-                          )
-                        : Icon(
-                            Icons.call,
-                            color: Colors.grey[600],
-                          ),
+                    subtitle: Text(friend.uniqueCode)
                   );
                 },
               );
@@ -162,71 +149,74 @@ class UserProfileSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(
-        left: 15,
-        bottom: 20,
-        right: 10,
-        top: 20
-      ),
-      child: FutureBuilder(
-        future: UserService.getLocalUserData(),
-        builder: (context, asyncSnapshot) {
-          final data = asyncSnapshot.data;
-          return Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    data?['name'] ?? "User",
-                    style: TextTheme.of(context).titleLarge,
-                  ),
-                  SizedBox(height: 8),
-                  Container(
-                    padding: EdgeInsets.only(
-                      left: 8
+    return GestureDetector(
+      onTap: () => context.push('/profile'),
+      child: Padding(
+        padding: const EdgeInsets.only(
+          left: 15,
+          bottom: 20,
+          right: 10,
+          top: 20
+        ),
+        child: FutureBuilder(
+          future: UserService.getLocalUserData(),
+          builder: (context, asyncSnapshot) {
+            final data = asyncSnapshot.data;
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      data?['name'] ?? "User",
+                      style: TextTheme.of(context).titleLarge,
                     ),
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: ColorScheme.of(context).secondaryContainer,
-                      border: Border.all(
-                        color: ColorScheme.of(context).onSecondaryContainer
+                    SizedBox(height: 8),
+                    Container(
+                      padding: EdgeInsets.only(
+                        left: 8
                       ),
-                      borderRadius: BorderRadius.circular(8)
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        SelectableText(data?['uniqueCode'] ?? ""),
-                        IconButton(
-                          icon: Icon(Icons.copy),
-                          iconSize: 18,
-                          padding: EdgeInsets.zero,
-                          onPressed: () {
-                            Clipboard.setData(ClipboardData(text: data?['uniqueCode'] ?? ""));
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text("Unique code copied to clipboard"),
-                              )
-                            );
-                          },
-                        )
-                      ],
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: ColorScheme.of(context).secondaryContainer,
+                        border: Border.all(
+                          color: ColorScheme.of(context).onSecondaryContainer
+                        ),
+                        borderRadius: BorderRadius.circular(8)
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          SelectableText(data?['uniqueCode'] ?? ""),
+                          IconButton(
+                            icon: Icon(Icons.copy),
+                            iconSize: 18,
+                            padding: EdgeInsets.zero,
+                            onPressed: () {
+                              Clipboard.setData(ClipboardData(text: data?['uniqueCode'] ?? ""));
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text("Unique code copied to clipboard"),
+                                )
+                              );
+                            },
+                          )
+                        ],
+                      )
                     )
-                  )
-                ],
-              ),
-              CircleAvatar(
-                backgroundImage: NetworkImage(data?['profilePic'] ?? ""),
-                radius: 40,
-              )
-            ],
-          );
-        }
+                  ],
+                ),
+                CircleAvatar(
+                  backgroundImage: NetworkImage(data?['profilePic'] ?? ""),
+                  radius: 40,
+                )
+              ],
+            );
+          }
+        ),
       ),
     );
   }
