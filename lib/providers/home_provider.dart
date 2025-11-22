@@ -1,28 +1,75 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:one_one/core/config/locator.dart';
+import 'package:one_one/core/config/logging.dart';
+import 'package:one_one/models/enums.dart';
 import 'package:one_one/models/friend.dart';
 import 'package:one_one/providers/walkie_talkie_provider.dart';
 
 class HomeProvider extends ChangeNotifier {
   final WalkieTalkieProvider walkieTalkieProvider;
+  late FriendsFetchStatus friendsFetchStatus;
 
   HomeProvider({
     required this.walkieTalkieProvider,
   }) {
-    fetchFrndsList();
-    // Listen to socket friends list updates for real-time status changes
-    walkieTalkieProvider.addListener(_onWalkieTalkieUpdate);
+    init();
   }
 
+  late List subs = [];
+
+  void init() {
+    friendsFetchStatus = FriendsFetchStatus.idle;
+    fetchFrndsList();
+    subs = [
+      walkieTalkieProvider.userPresenceStream.listen(_userPresenceListener),
+      Timer.periodic(Duration(seconds: 2), (_) {
+        if (friendsFetchStatus == FriendsFetchStatus.loaded && _userPresenceQueue.isNotEmpty) {
+          logger.debug("Processing user presence queue with ${_userPresenceQueue.length} items.");
+          while (_userPresenceQueue.isNotEmpty) {
+            final socketData = _userPresenceQueue.removeAt(0);
+            _userPresenceListener(socketData);
+          }
+        }
+      })
+    ];
+  }
+
+  void _userPresenceListener(SocketFriend socketData) {
+    if (friendsFetchStatus != FriendsFetchStatus.loaded) {
+      logger.debug("Friends list not loaded yet. Moving user presence update to queue.");
+      _userPresenceQueue.add(socketData);
+      return;
+    }
+    if (_friends.any((friend) => friend.uniqueCode == socketData.uniqueCode)) {
+      final index = _friends.indexWhere((friend) => friend.uniqueCode == socketData.uniqueCode);
+      _friends[index] = _friends[index].copyWith(
+        socketData: socketData
+      );
+      logger.debug("Updated friend: ${_friends[index].toMap()}");  
+      notifyListeners();
+    } else if (_pendingRequests.any((friend) => friend.uniqueCode == socketData.uniqueCode)) {
+      final index = _pendingRequests.indexWhere((friend) => friend.uniqueCode == socketData.uniqueCode);
+      _pendingRequests[index] = _pendingRequests[index].copyWith(
+        socketData: socketData
+      );
+      logger.debug("Updated pending friend user presence: ${_pendingRequests[index].toMap()}");  
+      notifyListeners();
+    } else {
+      logger.debug("User presence update for unknown user: ${socketData.uniqueCode}");
+    }
+  }
+
+  final List<SocketFriend> _userPresenceQueue = [];
   final List<Friend> _friends = [];
   final List<Friend> _pendingRequests = [];
 
-  void _onWalkieTalkieUpdate() {
-    // When socket friends list updates, refresh the data to sync online status
-    notifyListeners();
-  }
+  List<Friend> get friends => _friends;
+  List<Friend> get pendingRequests => _pendingRequests;
 
   void fetchFrndsList() async {
+    friendsFetchStatus = FriendsFetchStatus.loading;
+    notifyListeners();
     try {
       final res = await loc<ApiService>().get(
         "friend/list",
@@ -38,63 +85,20 @@ class HomeProvider extends ChangeNotifier {
           _pendingRequests.add(Friend.fromMap(friend));
         }
       }
+      friendsFetchStatus = FriendsFetchStatus.loaded;
       notifyListeners();
     } catch (e) {
-      // Handle error
+      friendsFetchStatus = FriendsFetchStatus.failure;
+      notifyListeners();
+      logger.error("Error fetching friends list: $e");
     }
-    
-  }
-
-  List<Friend> get friends => _friends;
-  List<Friend> get pendingRequests => _pendingRequests;
-
-  // Get online status for a friend using their Firebase UID
-  bool isFriendOnline(String friendId) {
-    // First try to find the friend in our list to get their Firebase UID
-    try {
-      final friend = _friends.firstWhere((f) => f.id == friendId);
-      if (friend.firebaseUid != null) {
-        return walkieTalkieProvider.isFriendOnline(friend.firebaseUid!);
-      }
-    } catch (e) {
-      // Friend not found, continue with fallback
-    }
-    // Fallback: assume friendId is already the Firebase UID
-    return walkieTalkieProvider.isFriendOnline(friendId);
-  }
-
-  // Get socket friend data by Firebase UID
-  SocketFriend? getSocketFriend(String friendId) {
-    // First try to find the friend in our list to get their Firebase UID
-    try {
-      final friend = _friends.firstWhere((f) => f.id == friendId);
-      if (friend.firebaseUid != null) {
-        return walkieTalkieProvider.getFriendByUid(friend.firebaseUid!);
-      }
-    } catch (e) {
-      // Friend not found, continue with fallback
-    }
-    // Fallback: assume friendId is already the Firebase UID
-    return walkieTalkieProvider.getFriendByUid(friendId);
-  }
-
-  // Get current socket code for calling a friend
-  String? getFriendSocketCode(String friendId) {
-    try {
-      final friend = _friends.firstWhere((f) => f.id == friendId);
-      if (friend.firebaseUid != null) {
-        // For now, return the stored socketId as we need server support for Firebase UID mapping
-        return friend.socketId;
-      }
-    } catch (e) {
-      // Friend not found
-    }
-    return null;
   }
 
   @override
   void dispose() {
-    walkieTalkieProvider.removeListener(_onWalkieTalkieUpdate);
+    for (final sub in subs) {
+      sub.cancel();
+    }
     super.dispose();
   }
 }

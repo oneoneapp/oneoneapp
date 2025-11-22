@@ -3,16 +3,14 @@ class Friend {
   final String name;
   final String photoUrl;
   final String uniqueCode;
-  final String? socketId;
-  final String? firebaseUid; // Firebase UID for socket mapping
+  final SocketFriend? socketData;
 
   const Friend({
     required this.id,
     required this.name,
     required this.photoUrl,
     required this.uniqueCode,
-    required this.socketId,
-    this.firebaseUid,
+    this.socketData
   });
 
   factory Friend.fromMap(Map map) {
@@ -20,9 +18,7 @@ class Friend {
       id: map['_id'],
       name: map['name'],
       photoUrl: map['photoUrl'],
-      uniqueCode: map['uniqueCode'],
-      socketId: map['socketId'],
-      firebaseUid: map['firebaseUid'] ?? map['uid'], // Handle both field names
+      uniqueCode: map['uniqueCode']
     );
   }
 
@@ -32,8 +28,71 @@ class Friend {
       'name': name,
       'photoUrl': photoUrl,
       'uniqueCode': uniqueCode,
-      'socketId': socketId,
-      'firebaseUid': firebaseUid,
+      'socketData': socketData?.toMap()
     };
   }
+
+  Friend copyWith({
+    String? id,
+    String? name,
+    String? photoUrl,
+    String? uniqueCode,
+    SocketFriend? socketData
+  }) {
+    return Friend(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      photoUrl: photoUrl ?? this.photoUrl,
+      uniqueCode: uniqueCode ?? this.uniqueCode,
+      socketData: socketData ?? this.socketData
+    );
+  }
+}
+
+class SocketFriend {
+  final String name;
+  final String firebaseUid;
+  final String uniqueCode;
+  final String? socketId;
+
+  SocketFriend({
+    required this.name,
+    required this.firebaseUid,
+    required this.uniqueCode,
+    this.socketId,
+  });
+
+  factory SocketFriend.fromMap(Map<String, dynamic> map) {
+    return SocketFriend(
+      name: map['name'] ?? '',
+      firebaseUid: map['uid'] ?? '',
+      uniqueCode: map['uniqueCode'],
+      socketId: map['socketId']
+    );
+  }
+
+  Map <String, dynamic> toMap() {
+    return {
+      'name': name,
+      'uid': firebaseUid,
+      'uniqueCode': uniqueCode,
+      'socketId': socketId,
+    };
+  }
+
+  SocketFriend copyWith({
+    String? name,
+    String? firebaseUid,
+    String? uniqueCode,
+    String? socketId,
+  }) {
+    return SocketFriend(
+      name: name ?? this.name,
+      firebaseUid: firebaseUid ?? this.firebaseUid,
+      uniqueCode: uniqueCode ?? this.uniqueCode,
+      socketId: socketId ?? this.socketId
+    );
+  }
+
+  bool get isOnline => socketId?.isNotEmpty ?? false;
 }
