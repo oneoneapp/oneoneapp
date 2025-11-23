@@ -131,7 +131,7 @@ class _HomePageState extends State<HomePage> {
             }
           },
           onRelease: () {
-            logger.info("Hold btn Released}");
+            logger.info("Hold btn Released");
             setState(() {
               isHolding = false;
             });
