@@ -167,8 +167,9 @@ class WalkieTalkieProvider extends ChangeNotifier {
       notifyListeners();
     };
 
-    if (audio) {
-      await _addLocalStreamToPeer();
+    await _addLocalStreamToPeer();
+    if (!audio) {
+      muteCall();
     }
   }
 
@@ -197,7 +198,7 @@ class WalkieTalkieProvider extends ChangeNotifier {
   }
 
   Future<void> receiveCall(String sdp, String sender) async {
-    await _initializePeerConnection(sender);
+    await _initializePeerConnection(sender, audio: false);
     await peerConnection!.setRemoteDescription(
       RTCSessionDescription(sdp, 'offer'),
     );
