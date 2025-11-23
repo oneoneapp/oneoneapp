@@ -3,6 +3,7 @@ import 'package:one_one/components/add_frnd_btn.dart';
 import 'package:one_one/components/bg_container.dart';
 import 'package:one_one/components/center_snap_scroll.dart';
 import 'package:one_one/components/hold_btn.dart';
+import 'package:one_one/core/config/logging.dart';
 import 'package:one_one/models/friend.dart';
 import 'package:one_one/providers/home_provider.dart';
 import 'package:provider/provider.dart';
@@ -104,29 +105,37 @@ class _HomePageState extends State<HomePage> {
         
         return HoldBtn(
           image: friend.photoUrl,
+          enabled: selectedAvatar?.id == friend.id,
           isOnline: friend.socketData?.isOnline ?? false,
           onHold: () {
+            logger.info("Hold btn holded");
             setState(() {
               isHolding = true;
             });
             final String? socketId = friend.socketData?.socketId;
             if (socketId != null) {
+              logger.info("Calling ${friend.name}");
               provider.startCall(socketId);
             }
           },
           onHolding: () {
+            logger.info("Hold btn put to Holding");
+            if (isHolding) return;
             setState(() {
               isHolding = true;
             });
             final String? socketId = friend.socketData?.socketId;
             if (socketId != null) {
+              logger.info("Calling ${friend.name}");
               provider.startCall(socketId);
             }
           },
           onRelease: () {
+            logger.info("Hold btn Released}");
             setState(() {
               isHolding = false;
             });
+            logger.info("Ending call ${friend.name}");
             provider.endCall();
           },
         );
