@@ -9,18 +9,23 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 class WalkieTalkieProvider extends ChangeNotifier {
   late Socket socket;
-  
   late StreamController<SocketFriend> userPresenceController;
   Stream<SocketFriend> get userPresenceStream => userPresenceController.stream;
 
   String uniqueCode = '';
 
+  // single local microphone stream (shared)
   MediaStream? localStream;
-  MediaStream? remoteStream;
-  RTCPeerConnection? peerConnection;
+  // multiple remote streams keyed by remote user code
+  final Map<String, MediaStream> remoteStreams = {};
+  // one RTCPeerConnection per remote user (both incoming and outgoing)
+  final Map<String, RTCPeerConnection> peerConnections = {};
+  // keep track of senders added for each peer so we can remove/replace when we stop transmitting
+  final Map<String, List<RTCRtpSender>> _peerSenders = {};
 
   bool isCallActive = false;
   bool isConnected = false;
+  String? selectedTarget;
 
   Future<void> initialize() async {
     userPresenceController = StreamController.broadcast();
@@ -37,7 +42,7 @@ class WalkieTalkieProvider extends ChangeNotifier {
           'forceNew': true,
           'reconnection': true,
           'reconnectionAttempts': 10000,
-        }
+        },
       );
       socket.connect();
 
@@ -45,12 +50,12 @@ class WalkieTalkieProvider extends ChangeNotifier {
         isConnected = true;
         final String firebaseUid = FirebaseAuth.instance.currentUser?.uid ?? '';
         logger.debug(firebaseUid);
-        socket.emit('connect-user',{
+        socket.emit('connect-user', {
           'name': FirebaseAuth.instance.currentUser?.displayName ?? 'Anonymous',
           'uid': firebaseUid,
         });
 
-        socket.emit('get-friends-list',{
+        socket.emit('get-friends-list', {
           'uid': firebaseUid,
         });
 
@@ -107,41 +112,74 @@ class WalkieTalkieProvider extends ChangeNotifier {
 
   void _setupWebRTCListeners() {
     socket.on('offer', (data) async {
-      logger.debug('Offer received');
-      logger.debug(data);
-      if (data['receiver'] == uniqueCode) {
-        await receiveCall(data['sdp'], data['sender']);
-      }
+      logger.debug('Offer received: $data');
+      final sender = data['sender'] as String;
+      final receiver = data['receiver'] as String;
+      if (receiver != uniqueCode) return;
+
+      // ensure local stream exists
+      await _ensureLocalStream();
+      // create or reuse peer for sender
+      final pc = await _createPeerIfNeeded(sender);
+      // set remote description and answer
+      await pc.setRemoteDescription(RTCSessionDescription(data['sdp'], 'offer'));
+
+      final answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+
+      socket.emit('answer', {
+        'sdp': answer.sdp,
+        'sender': uniqueCode,
+        'receiver': sender,
+      });
+
+      isCallActive = true;
+      notifyListeners();
     });
 
     socket.on('answer', (data) async {
-      logger.debug('Answer recieved');
-      logger.debug(data);
-      if (data['receiver'] == uniqueCode) {
-        // handle answer
-        await peerConnection?.setRemoteDescription(
-          RTCSessionDescription(data['sdp'], 'answer'),
-        );
+      logger.debug('Answer received: $data');
+      final sender = data['sender'] as String;
+      final receiver = data['receiver'] as String;
+      if (receiver != uniqueCode) return;
+      final pc = peerConnections[sender];
+      if (pc == null) {
+        logger.warning('Received answer for unknown peer $sender');
+        return;
       }
+      await pc.setRemoteDescription(RTCSessionDescription(data['sdp'], 'answer'));
     });
 
     socket.on('ice-candidate', (data) async {
-      logger.info('ICE candidate received');
-      logger.debug(data);
-      if (data['receiver'] == uniqueCode) {
-        // handle ICE candidate
-        await peerConnection?.addCandidate(
-          RTCIceCandidate(
-            data['candidate'],
-            data['sdpMid'],
-            data['sdpMLineIndex'],
-          ),
-        );
+      logger.info('ICE candidate received: $data');
+      final from = data['sender'] as String;
+      final to = data['receiver'] as String;
+      if (to != uniqueCode) return;
+      final pc = peerConnections[from];
+      if (pc == null) {
+        logger.warning('ICE candidate for unknown peer $from');
+        return;
+      }
+      try {
+        await pc.addCandidate(RTCIceCandidate(
+          data['candidate'],
+          data['sdpMid'],
+          data['sdpMLineIndex'],
+        ));
+      } catch (e) {
+        logger.error('Failed to add ICE candidate for $from: $e');
       }
     });
   }
 
-  Future<void> _initializePeerConnection(String userCode, {bool audio = true}) async {
+  Future<void> _ensureLocalStream() async {
+    if (localStream != null) return;
+    localStream = await navigator.mediaDevices.getUserMedia({'audio': true, 'video': false});
+  }
+
+  Future<RTCPeerConnection> _createPeerIfNeeded(String peerId) async {
+    if (peerConnections.containsKey(peerId)) return peerConnections[peerId]!;
+
     final config = {
       'iceServers': [
         {'urls': 'stun:stun.l.google.com:19302'},
@@ -149,98 +187,180 @@ class WalkieTalkieProvider extends ChangeNotifier {
       'sdpSemantics': 'unified-plan'
     };
 
-    peerConnection = await createPeerConnection(config);
+    final pc = await createPeerConnection(config);
 
-    peerConnection!.onIceCandidate = (candidate) {
+    pc.onIceCandidate = (candidate) {
       socket.emit('ice-candidate', {
         'candidate': candidate.candidate,
         'sdpMid': candidate.sdpMid,
         'sdpMLineIndex': candidate.sdpMLineIndex,
         'sender': uniqueCode,
-        'receiver': userCode,
+        'receiver': peerId,
       });
-      logger.info('ICE candidate sent');
+      logger.info('ICE candidate sent to $peerId');
     };
 
-    peerConnection!.onTrack = (event) {
-      remoteStream = event.streams[0];
-      notifyListeners();
+    pc.onTrack = (event) {
+      logger.debug('onTrack from $peerId');
+      if (event.streams.isNotEmpty) {
+        remoteStreams[peerId] = event.streams[0];
+        notifyListeners();
+      }
     };
 
-    await _addLocalStreamToPeer();
-    if (!audio) {
-      muteCall();
+    pc.onConnectionState = (state) {
+      logger.debug('Peer $peerId connection state: $state');
+      if (state == RTCPeerConnectionState.RTCPeerConnectionStateDisconnected ||
+          state == RTCPeerConnectionState.RTCPeerConnectionStateFailed ||
+          state == RTCPeerConnectionState.RTCPeerConnectionStateClosed) {
+        _closePeer(peerId);
+      }
+    };
+
+    peerConnections[peerId] = pc;
+    _peerSenders[peerId] = [];
+    return pc;
+  }
+
+  Future<void> startCall(String peerCode) async {
+    await _ensureLocalStream();
+    final pc = await _createPeerIfNeeded(peerCode);
+
+    // add local audio track now so the other side hears when you press mic
+    // note: addTrack returns RTCRtpSender which we store so we can remove later
+    final audioSenders = <RTCRtpSender>[];
+    for (final track in localStream!.getAudioTracks()) {
+      final sender = await pc.addTrack(track, localStream!);
+      audioSenders.add(sender);
     }
-  }
+    _peerSenders[peerCode] = audioSenders;
 
-  Future<void> _addLocalStreamToPeer() async {
-    localStream = await navigator.mediaDevices.getUserMedia({
-      'audio': true,
-      'video': false
-    });
-    localStream!.getTracks().forEach((track) {
-      peerConnection!.addTrack(track, localStream!);
-    });
-  }
-
-  Future<void> startCall(String code, {bool audio = true}) async {
-    await _initializePeerConnection(code, audio: audio);
-    final offer = await peerConnection!.createOffer();
-    await peerConnection!.setLocalDescription(offer);
+    final offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
     socket.emit('offer', {
       'sdp': offer.sdp,
       'sender': uniqueCode,
-      'receiver': code,
+      'receiver': peerCode,
     });
 
+    selectedTarget = peerCode;
     isCallActive = true;
     notifyListeners();
   }
 
-  Future<void> receiveCall(String sdp, String sender) async {
-    await _initializePeerConnection(sender, audio: false);
-    await peerConnection!.setRemoteDescription(
-      RTCSessionDescription(sdp, 'offer'),
-    );
-
-    final answer = await peerConnection!.createAnswer();
-    await peerConnection!.setLocalDescription(answer);
-
+  Future<void> answerCall(String peerCode) async {
+    await _ensureLocalStream();
+    final pc = await _createPeerIfNeeded(peerCode);
+    final answer = await pc.createAnswer();
+    await pc.setLocalDescription(answer);
     socket.emit('answer', {
       'sdp': answer.sdp,
       'sender': uniqueCode,
-      'receiver': sender,
+      'receiver': peerCode,
     });
-
     isCallActive = true;
     notifyListeners();
   }
 
-  void endCall() {
+  Future<void> attachMicrophoneTo(String targetCode) async {
+    await _ensureLocalStream();
+    // if already attached to a different target, detach there first
+    if (selectedTarget != null && selectedTarget != targetCode) {
+      await detachMicrophoneFrom(selectedTarget!);
+    }
+
+    final pc = await _createPeerIfNeeded(targetCode);
+    // if we already have senders for this peer, avoid duplicate adds
+    if ((_peerSenders[targetCode] ?? []).isNotEmpty) {
+      selectedTarget = targetCode;
+      notifyListeners();
+      return;
+    }
+
+    final audioSenders = <RTCRtpSender>[];
+    for (final track in localStream!.getAudioTracks()) {
+      final sender = await pc.addTrack(track, localStream!);
+      audioSenders.add(sender);
+    }
+    _peerSenders[targetCode] = audioSenders;
+    selectedTarget = targetCode;
+    notifyListeners();
+  }
+
+  Future<void> detachMicrophoneFrom(String targetCode) async {
+    final pc = peerConnections[targetCode];
+    if (pc == null) return;
+    final senders = _peerSenders[targetCode] ?? [];
+    for (final s in senders) {
+      try {
+        await s.replaceTrack(null);
+      } catch (e) {
+        try {
+          await pc.removeTrack(s);
+        } catch (_) {}
+      }
+    }
+    _peerSenders[targetCode] = [];
+    if (selectedTarget == targetCode) selectedTarget = null;
+    notifyListeners();
+  }
+
+  /// end/close a single peer
+  Future<void> _closePeer(String peerId) async {
+    try {
+      await detachMicrophoneFrom(peerId);
+    } catch (_) {}
+    final pc = peerConnections.remove(peerId);
+    try {
+      await pc?.close();
+      await pc?.dispose();
+    } catch (_) {}
+    final r = remoteStreams.remove(peerId);
+    try {
+      await r?.dispose();
+    } catch (_) {}
+    _peerSenders.remove(peerId);
+    notifyListeners();
+  }
+
+  void endAllCalls() {
+    for (final peerId in List<String>.from(peerConnections.keys)) {
+      _closePeer(peerId);
+    }
     localStream?.dispose();
-    remoteStream?.dispose();
-    peerConnection?.dispose();
+    localStream = null;
     isCallActive = false;
+    selectedTarget = null;
+    notifyListeners();
+  }
+
+  void endCall(String peerCode) {
+    _closePeer(peerCode);
+    isCallActive = peerConnections.isNotEmpty;
+    selectedTarget = null;
     notifyListeners();
   }
 
   bool get isMuted {
-    if (localStream == null) return false;
+    if (localStream == null) return true;
     return !(localStream!.getAudioTracks().first.enabled);
   }
 
-  void muteCall() {
-    localStream?.getAudioTracks().forEach((track) {
-      track.enabled = !track.enabled;
-    });
+  void muteMic() {
+    if (localStream == null) return;
+    for (final t in localStream!.getAudioTracks()) {
+      t.enabled = !t.enabled;
+    }
     notifyListeners();
   }
 
   @override
   void dispose() {
-    endCall();
+    endAllCalls();
     userPresenceController.close();
-    socket.disconnect();
+    try {
+      socket.disconnect();
+    } catch (_) {}
     super.dispose();
   }
 }

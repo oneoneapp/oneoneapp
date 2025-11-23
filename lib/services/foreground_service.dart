@@ -124,7 +124,7 @@ class WalkieTalkieTaskHandler extends TaskHandler {
       } else {
         if (walkieTalkieProvider.isConnected && walkieTalkieProvider.uniqueCode != '') {
           logger.info('Starting call with $callerSocketId from foreground service');
-          walkieTalkieProvider.startCall(callerSocketId!, audio: false);
+          walkieTalkieProvider.startCall(callerSocketId!);
         } else {
           logger.info('Socket not connected yet, cannot start call');
         }

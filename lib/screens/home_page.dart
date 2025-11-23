@@ -136,7 +136,7 @@ class _HomePageState extends State<HomePage> {
               isHolding = false;
             });
             logger.info("Ending call ${friend.name}");
-            provider.endCall();
+            provider.endCall(friend.socketData?.socketId ?? '');
           },
         );
       }
