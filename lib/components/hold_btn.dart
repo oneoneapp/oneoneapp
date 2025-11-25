@@ -1,8 +1,8 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:one_one/components/online_status_dot.dart';
+import 'package:one_one/components/speaking_status_dot.dart';
 import 'package:one_one/core/config/logging.dart';
 import 'package:one_one/core/shared/spacing.dart';
 
@@ -11,6 +11,7 @@ class HoldBtn extends StatefulWidget {
   final bool? isHolding;
   final bool enabled;
   final bool isOnline;
+  final bool isSpeaking;
   final Function()? onHold;
   final Function()? onHolding;
   final Function()? onRelease;
@@ -21,6 +22,7 @@ class HoldBtn extends StatefulWidget {
     this.isHolding,
     this.enabled = true,
     this.isOnline = false,
+    this.isSpeaking = false,
     this.onHold,
     this.onHolding,
     this.onRelease
@@ -187,11 +189,27 @@ class _HoldBtnState extends State<HoldBtn> {
         ),
         if (widget.isOnline)
           Positioned(
-            bottom: _isHolding ? 16: 18,
-            right: _isHolding ? 2 : 5,
+            bottom: 18,
+            right: 10,
             child: OnlineStatusDot(
               isOnline: widget.isOnline,
               size: 20,
+            ),
+          ),
+        if (widget.isSpeaking)
+          Positioned(
+            top: 14,
+            left: 8,
+            child: Container(
+              padding: const EdgeInsets.all(Spacing.s1),
+              decoration: BoxDecoration(
+                color: ColorScheme.of(context).primary,
+                borderRadius: BorderRadius.circular(Spacing.s2),
+              ),
+              child: SpeakingStatusDot(
+                activeColor: ColorScheme.of(context).onPrimary,
+                size: 12
+              ),
             ),
           ),
       ],

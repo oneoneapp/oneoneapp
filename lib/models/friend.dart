@@ -1,3 +1,5 @@
+export '../utils/friend.dart';
+
 class Friend {
   final String id;
   final String name;
@@ -54,12 +56,14 @@ class SocketFriend {
   final String firebaseUid;
   final String uniqueCode;
   final String? socketId;
+  final bool speaking;
 
   SocketFriend({
     required this.name,
     required this.firebaseUid,
     required this.uniqueCode,
     this.socketId,
+    this.speaking = false,
   });
 
   factory SocketFriend.fromMap(Map<String, dynamic> map) {
@@ -85,12 +89,14 @@ class SocketFriend {
     String? firebaseUid,
     String? uniqueCode,
     String? socketId,
+    bool? speaking
   }) {
     return SocketFriend(
       name: name ?? this.name,
       firebaseUid: firebaseUid ?? this.firebaseUid,
       uniqueCode: uniqueCode ?? this.uniqueCode,
-      socketId: socketId ?? this.socketId
+      socketId: socketId ?? this.socketId,
+      speaking: speaking ?? this.speaking
     );
   }
 

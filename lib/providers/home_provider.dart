@@ -4,6 +4,7 @@ import 'package:one_one/core/config/locator.dart';
 import 'package:one_one/core/config/logging.dart';
 import 'package:one_one/models/enums.dart';
 import 'package:one_one/models/friend.dart';
+import 'package:one_one/models/speaker_event.dart';
 import 'package:one_one/providers/walkie_talkie_provider.dart';
 
 class HomeProvider extends ChangeNotifier {
@@ -23,6 +24,7 @@ class HomeProvider extends ChangeNotifier {
     fetchFrndsList();
     subs = [
       walkieTalkieProvider.userPresenceStream.listen(_userPresenceListener),
+      walkieTalkieProvider.userSpeakingStream.listen(_userSpeakingListener),
       Timer.periodic(Duration(seconds: 2), (_) {
         if (friendsFetchStatus == FriendsFetchStatus.loaded && _userPresenceQueue.isNotEmpty) {
           logger.debug("Processing user presence queue with ${_userPresenceQueue.length} items.");
@@ -41,15 +43,15 @@ class HomeProvider extends ChangeNotifier {
       _userPresenceQueue.add(socketData);
       return;
     }
-    if (_friends.any((friend) => friend.uniqueCode == socketData.uniqueCode)) {
-      final index = _friends.indexWhere((friend) => friend.uniqueCode == socketData.uniqueCode);
+    if (_friends.containsUniqueCode(socketData.uniqueCode)) {
+      final index = _friends.indexByUniqueCode(socketData.uniqueCode);
       _friends[index] = _friends[index].copyWith(
         socketData: socketData
       );
       logger.debug("Updated friend: ${_friends[index].toMap()}");  
       notifyListeners();
-    } else if (_pendingRequests.any((friend) => friend.uniqueCode == socketData.uniqueCode)) {
-      final index = _pendingRequests.indexWhere((friend) => friend.uniqueCode == socketData.uniqueCode);
+    } else if (_pendingRequests.containsUniqueCode(socketData.uniqueCode)) {
+      final index = _pendingRequests.indexByUniqueCode(socketData.uniqueCode);
       _pendingRequests[index] = _pendingRequests[index].copyWith(
         socketData: socketData
       );
@@ -57,6 +59,19 @@ class HomeProvider extends ChangeNotifier {
       notifyListeners();
     } else {
       logger.debug("User presence update for unknown user: ${socketData.uniqueCode}");
+    }
+  }
+
+  void _userSpeakingListener(ActiveSpeakerEvent event) {
+    if (_friends.containsSocketId(event.socketId)) {
+      final index = _friends.indexBySocketId(event.socketId);
+      _friends[index] = _friends[index].copyWith(
+        socketData: _friends[index].socketData?.copyWith(
+          speaking: event.speaking,
+        )
+      );
+      logger.debug("Updated friend speaking status: ${_friends[index].toMap()}");  
+      notifyListeners();
     }
   }
 

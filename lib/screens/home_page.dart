@@ -107,6 +107,7 @@ class _HomePageState extends State<HomePage> {
           image: friend.photoUrl,
           enabled: selectedAvatar?.id == friend.id,
           isOnline: friend.socketData?.isOnline ?? false,
+          isSpeaking: friend.socketData?.speaking ?? false,
           onHold: () {
             logger.info("Hold btn holded");
             setState(() {

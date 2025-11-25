@@ -3,14 +3,17 @@ import 'package:flutter/material.dart';
 import 'package:one_one/core/config/baseurl.dart';
 import 'package:one_one/core/config/logging.dart';
 import 'package:one_one/models/friend.dart';
+import 'package:one_one/models/speaker_event.dart';
 import 'package:socket_io_client/socket_io_client.dart';
 import 'package:flutter_webrtc/flutter_webrtc.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class WalkieTalkieProvider extends ChangeNotifier {
   late Socket socket;
-  late StreamController<SocketFriend> userPresenceController;
-  Stream<SocketFriend> get userPresenceStream => userPresenceController.stream;
+  late StreamController<SocketFriend> _userPresenceController;
+  Stream<SocketFriend> get userPresenceStream => _userPresenceController.stream;
+  late StreamController<ActiveSpeakerEvent> _userSpeaking;
+  Stream<ActiveSpeakerEvent> get userSpeakingStream => _userSpeaking.stream;
 
   String uniqueCode = '';
 
@@ -23,13 +26,23 @@ class WalkieTalkieProvider extends ChangeNotifier {
   // keep track of senders added for each peer so we can remove/replace when we stop transmitting
   final Map<String, List<RTCRtpSender>> _peerSenders = {};
 
+  Timer? _audioMonitorTimer;
+  static const int _audioMonitorIntervalMs = 300;
+  static const int _speakingThresholdBytes = 150;
+  // last observed bytesReceived for inbound RTP stream per peer
+  final Map<String, int> _lastBytesReceived = {};
+  // current speaking state per peer
+  final Map<String, bool> _speaking = {};
+
   bool isCallActive = false;
   bool isConnected = false;
   String? selectedTarget;
 
   Future<void> initialize() async {
-    userPresenceController = StreamController.broadcast();
+    _userPresenceController = StreamController.broadcast();
+    _userSpeaking = StreamController.broadcast();
     await _initializeSocket();
+    _startAudioMonitor();
   }
 
   Future<void> _initializeSocket() async {
@@ -84,14 +97,14 @@ class WalkieTalkieProvider extends ChangeNotifier {
     socket.on('user-connected', (data) {
       logger.debug('User connected: $data');
       final friend = SocketFriend.fromMap(data);
-      userPresenceController.add(friend);
+      _userPresenceController.add(friend);
       notifyListeners();
     });
 
     socket.on('user-disconnected', (data) {
       logger.debug('User disconnected: $data');
       final friend = SocketFriend.fromMap(data);
-      userPresenceController.add(friend);
+      _userPresenceController.add(friend);
       notifyListeners();
     });
 
@@ -104,7 +117,7 @@ class WalkieTalkieProvider extends ChangeNotifier {
         }
       }
       for (final friend in friendsList) {
-        userPresenceController.add(friend);
+        _userPresenceController.add(friend);
       }
       notifyListeners();
     });
@@ -172,6 +185,76 @@ class WalkieTalkieProvider extends ChangeNotifier {
     });
   }
 
+  void _startAudioMonitor() {
+    if (_audioMonitorTimer != null) return;
+    _audioMonitorTimer = Timer.periodic(Duration(milliseconds: _audioMonitorIntervalMs), (t) async {
+      for (final entry in List.from(peerConnections.entries)) {
+        final peerId = entry.key;
+        final pc = entry.value;
+        try {
+          final stats = await pc.getStats();
+          int? bytesReceived;
+          try {
+            for (final report in stats) {
+              try {
+                final dyn = report as dynamic;
+                String? type;
+                Map? values;
+                try {
+                  type = dyn.type as String?;
+                } catch (_) {
+                  try {
+                    type = (report as Map)['type'] as String?;
+                  } catch (_) {}
+                }
+                try {
+                  values = dyn.values as Map?;
+                } catch (_) {
+                  if (report is Map) values = report;
+                }
+                final kind = values?['kind'] ?? values?['mediaType'];
+                if (type == 'inbound-rtp' && (kind == 'audio')) {
+                  final br = values?['bytesReceived'] ?? values?['packetsReceived'];
+                  if (br is int) {
+                    bytesReceived = br;
+                    break;
+                  } else if (br is String) {
+                    bytesReceived = int.tryParse(br);
+                    if (bytesReceived != null) break;
+                  }
+                }
+              } catch (_) {}
+            }
+          } catch (_) {}
+
+          final last = _lastBytesReceived[peerId] ?? 0;
+          if (bytesReceived != null) {
+            final delta = bytesReceived - last;
+            final speaking = delta > _speakingThresholdBytes;
+            final prev = _speaking[peerId] ?? false;
+            if (speaking != prev) {
+              _speaking[peerId] = speaking;
+              try {
+                _userSpeaking.add(ActiveSpeakerEvent(socketId: peerId, speaking: speaking));
+              } catch (_) {}
+              notifyListeners();
+            }
+            _lastBytesReceived[peerId] = bytesReceived;
+          } else {
+            final prev = _speaking[peerId] ?? false;
+            if (prev) {
+              _speaking[peerId] = false;
+              try {
+                _userSpeaking.add(ActiveSpeakerEvent(socketId: peerId, speaking: false));
+              } catch (_) {}
+              notifyListeners();
+            }
+          }
+        } catch (_) {}
+      }
+    });
+  }
+
   Future<void> _ensureLocalStream() async {
     if (localStream != null) return;
     localStream = await navigator.mediaDevices.getUserMedia({'audio': true, 'video': false});
@@ -204,6 +287,11 @@ class WalkieTalkieProvider extends ChangeNotifier {
       logger.debug('onTrack from $peerId');
       if (event.streams.isNotEmpty) {
         remoteStreams[peerId] = event.streams[0];
+        _lastBytesReceived[peerId] = 0;
+        _speaking[peerId] = false;
+        try {
+          _userSpeaking.add(ActiveSpeakerEvent(socketId: peerId, speaking: false));
+        } catch (_) {}
         notifyListeners();
       }
     };
@@ -320,17 +408,18 @@ class WalkieTalkieProvider extends ChangeNotifier {
       await r?.dispose();
     } catch (_) {}
     _peerSenders.remove(peerId);
+    try {
+      _lastBytesReceived.remove(peerId);
+      _speaking.remove(peerId);
+      _userSpeaking.add(ActiveSpeakerEvent(socketId: peerId, speaking: false));
+    } catch (_) {}
     notifyListeners();
   }
 
   void endAllCalls() {
     for (final peerId in List<String>.from(peerConnections.keys)) {
-      _closePeer(peerId);
+      endCall(peerId);
     }
-    localStream?.dispose();
-    localStream = null;
-    isCallActive = false;
-    selectedTarget = null;
     notifyListeners();
   }
 
@@ -357,8 +446,17 @@ class WalkieTalkieProvider extends ChangeNotifier {
   @override
   void dispose() {
     endAllCalls();
-    userPresenceController.close();
     try {
+      localStream?.dispose();
+      localStream = null;
+
+      _audioMonitorTimer?.cancel();
+      _userSpeaking.close();
+      _audioMonitorTimer = null;
+      _lastBytesReceived.clear();
+      _speaking.clear();
+
+      _userPresenceController.close();
       socket.disconnect();
     } catch (_) {}
     super.dispose();
