@@ -5,34 +5,31 @@ import 'package:one_one/components/online_status_dot.dart';
 import 'package:one_one/components/speaking_status_dot.dart';
 import 'package:one_one/core/config/logging.dart';
 import 'package:one_one/core/shared/spacing.dart';
+import 'package:one_one/models/friend.dart';
 
-class HoldBtn extends StatefulWidget {
-  final String? image;
-  final bool? isHolding;
+class FriendBtn extends StatefulWidget {
+  final Friend friend;
   final bool enabled;
-  final bool isOnline;
-  final bool isSpeaking;
+  final bool? isHolding;
   final Function()? onHold;
   final Function()? onHolding;
   final Function()? onRelease;
 
-  const HoldBtn({
+  const FriendBtn({
     super.key,
-    this.image,
+    required this.friend,
     this.isHolding,
     this.enabled = true,
-    this.isOnline = false,
-    this.isSpeaking = false,
     this.onHold,
     this.onHolding,
     this.onRelease
   });
 
   @override
-  State<HoldBtn> createState() => _HoldBtnState();
+  State<FriendBtn> createState() => _FriendBtnState();
 }
 
-class _HoldBtnState extends State<HoldBtn> {
+class _FriendBtnState extends State<FriendBtn> {
   late Timer? releaseFuncTimer;
   
   late bool _isHolding;
@@ -176,9 +173,9 @@ class _HoldBtnState extends State<HoldBtn> {
                   color: _isHolding
                     ? ColorScheme.of(context).onSurfaceVariant
                     : ColorScheme.of(context).onSurfaceVariant.withValues(alpha: 0.9),
-                  image: widget.image != null
+                  image: widget.friend.photoUrl.isNotEmpty
                     ? DecorationImage(
-                        image: NetworkImage(widget.image!),
+                        image: NetworkImage(widget.friend.photoUrl),
                         fit: BoxFit.cover,
                       )
                     : null,
@@ -187,16 +184,15 @@ class _HoldBtnState extends State<HoldBtn> {
             )
           ),
         ),
-        if (widget.isOnline)
+        if (widget.friend.socketData?.isOnline ?? false)
           Positioned(
             bottom: 18,
             right: 10,
             child: OnlineStatusDot(
-              isOnline: widget.isOnline,
               size: 20,
             ),
           ),
-        if (widget.isSpeaking)
+        if (widget.friend.socketData?.speaking ?? false)
           Positioned(
             top: 14,
             left: 8,

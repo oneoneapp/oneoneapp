@@ -37,7 +37,7 @@ class HomeProvider extends ChangeNotifier {
     ];
   }
 
-  void _userPresenceListener(SocketFriend socketData) {
+  void _userPresenceListener(SocketData socketData) {
     if (friendsFetchStatus != FriendsFetchStatus.loaded) {
       logger.debug("Friends list not loaded yet. Moving user presence update to queue.");
       _userPresenceQueue.add(socketData);
@@ -75,7 +75,7 @@ class HomeProvider extends ChangeNotifier {
     }
   }
 
-  final List<SocketFriend> _userPresenceQueue = [];
+  final List<SocketData> _userPresenceQueue = [];
   final List<Friend> _friends = [];
   final List<Friend> _pendingRequests = [];
 

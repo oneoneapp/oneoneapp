@@ -7,7 +7,7 @@ class OnlineStatusDot extends StatelessWidget {
 
   const OnlineStatusDot({
     super.key,
-    required this.isOnline,
+    this.isOnline = true,
     this.size = 12.0,
     this.margin,
   });

@@ -5,7 +5,7 @@ class Friend {
   final String name;
   final String photoUrl;
   final String uniqueCode;
-  final SocketFriend? socketData;
+  final SocketData? socketData;
 
   const Friend({
     required this.id,
@@ -39,7 +39,7 @@ class Friend {
     String? name,
     String? photoUrl,
     String? uniqueCode,
-    SocketFriend? socketData
+    SocketData? socketData
   }) {
     return Friend(
       id: id ?? this.id,
@@ -51,14 +51,14 @@ class Friend {
   }
 }
 
-class SocketFriend {
+class SocketData {
   final String name;
   final String firebaseUid;
   final String uniqueCode;
   final String? socketId;
   final bool speaking;
 
-  SocketFriend({
+  SocketData({
     required this.name,
     required this.firebaseUid,
     required this.uniqueCode,
@@ -66,8 +66,8 @@ class SocketFriend {
     this.speaking = false,
   });
 
-  factory SocketFriend.fromMap(Map<String, dynamic> map) {
-    return SocketFriend(
+  factory SocketData.fromMap(Map<String, dynamic> map) {
+    return SocketData(
       name: map['name'] ?? '',
       firebaseUid: map['uid'] ?? '',
       uniqueCode: map['uniqueCode'],
@@ -84,14 +84,14 @@ class SocketFriend {
     };
   }
 
-  SocketFriend copyWith({
+  SocketData copyWith({
     String? name,
     String? firebaseUid,
     String? uniqueCode,
     String? socketId,
     bool? speaking
   }) {
-    return SocketFriend(
+    return SocketData(
       name: name ?? this.name,
       firebaseUid: firebaseUid ?? this.firebaseUid,
       uniqueCode: uniqueCode ?? this.uniqueCode,

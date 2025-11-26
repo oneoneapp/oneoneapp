@@ -10,8 +10,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 class WalkieTalkieProvider extends ChangeNotifier {
   late Socket socket;
-  late StreamController<SocketFriend> _userPresenceController;
-  Stream<SocketFriend> get userPresenceStream => _userPresenceController.stream;
+  late StreamController<SocketData> _userPresenceController;
+  Stream<SocketData> get userPresenceStream => _userPresenceController.stream;
   late StreamController<ActiveSpeakerEvent> _userSpeaking;
   Stream<ActiveSpeakerEvent> get userSpeakingStream => _userSpeaking.stream;
 
@@ -96,24 +96,24 @@ class WalkieTalkieProvider extends ChangeNotifier {
 
     socket.on('user-connected', (data) {
       logger.debug('User connected: $data');
-      final friend = SocketFriend.fromMap(data);
+      final friend = SocketData.fromMap(data);
       _userPresenceController.add(friend);
       notifyListeners();
     });
 
     socket.on('user-disconnected', (data) {
       logger.debug('User disconnected: $data');
-      final friend = SocketFriend.fromMap(data);
+      final friend = SocketData.fromMap(data);
       _userPresenceController.add(friend);
       notifyListeners();
     });
 
     socket.on('friends-list', (data) {
       logger.debug('Friends list received: $data');
-      final List<SocketFriend> friendsList = [];
+      final List<SocketData> friendsList = [];
       for (var friendData in data) {
         if (friendData is Map<String, dynamic>) {
-          friendsList.add(SocketFriend.fromMap(friendData));
+          friendsList.add(SocketData.fromMap(friendData));
         }
       }
       for (final friend in friendsList) {

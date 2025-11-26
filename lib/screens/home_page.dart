@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:one_one/components/add_frnd_btn.dart';
 import 'package:one_one/components/bg_container.dart';
 import 'package:one_one/components/center_snap_scroll.dart';
-import 'package:one_one/components/hold_btn.dart';
+import 'package:one_one/components/friend_btn.dart';
 import 'package:one_one/core/config/logging.dart';
 import 'package:one_one/models/friend.dart';
 import 'package:one_one/providers/home_provider.dart';
@@ -101,13 +101,11 @@ class _HomePageState extends State<HomePage> {
     return List.generate(
       homeProvider.friends.length,
       (index) {
-        final friend = homeProvider.friends[index];
+        final Friend friend = homeProvider.friends[index];
         
-        return HoldBtn(
-          image: friend.photoUrl,
+        return FriendBtn(
+          friend: friend,
           enabled: selectedAvatar?.id == friend.id,
-          isOnline: friend.socketData?.isOnline ?? false,
-          isSpeaking: friend.socketData?.speaking ?? false,
           onHold: () {
             logger.info("Hold btn holded");
             setState(() {
