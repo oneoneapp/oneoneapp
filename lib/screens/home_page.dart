@@ -3,7 +3,9 @@ import 'package:one_one/components/add_frnd_btn.dart';
 import 'package:one_one/components/bg_container.dart';
 import 'package:one_one/components/center_snap_scroll.dart';
 import 'package:one_one/components/friend_btn.dart';
+import 'package:one_one/components/speaking_status_dot.dart';
 import 'package:one_one/core/config/logging.dart';
+import 'package:one_one/core/shared/spacing.dart';
 import 'package:one_one/models/friend.dart';
 import 'package:one_one/providers/home_provider.dart';
 import 'package:provider/provider.dart';
@@ -55,6 +57,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<WalkieTalkieProvider>(context);
+    final homeProvider = Provider.of<HomeProvider>(context);
 
     return Scaffold(
       body: Stack(
@@ -74,6 +77,46 @@ class _HomePageState extends State<HomePage> {
                   Colors.black
                 ],
                 stops: const [0.1, 0.9],
+              )
+            ),
+          ),
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 20,
+            right: MediaQuery.of(context).padding.right + 15,
+            child: Column(
+              children: List.generate(
+                homeProvider.friends.speaking.length, 
+                (index) {
+                  final Friend friend = homeProvider.friends.speaking[index];
+                  return Container(
+                    margin: const EdgeInsets.only(
+                      bottom: Spacing.s1
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: Spacing.s2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: ColorScheme.of(context).primary,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: ColorScheme.of(context).onPrimary,
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        SpeakingStatusDot(),
+                        const SizedBox(width: Spacing.s2),
+                        Text(
+                          friend.name,
+                          style: TextTheme.of(context).titleSmall?.copyWith(
+                            color: ColorScheme.of(context).surface,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
               )
             ),
           ),

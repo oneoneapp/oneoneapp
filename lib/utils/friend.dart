@@ -1,6 +1,10 @@
 import 'package:one_one/models/friend.dart';
 
 extension FriendListUtils on List<Friend> {
+  List<Friend> get speaking {
+    return where((friend) => friend.socketData?.speaking == true).toList();
+  }
+
   Friend? getByUniqueCode(String uniqueCode) {
     try {
       return firstWhere((friend) => friend.uniqueCode == uniqueCode);
