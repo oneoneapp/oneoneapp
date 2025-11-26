@@ -192,7 +192,7 @@ class _FriendBtnState extends State<FriendBtn> {
               size: 20,
             ),
           ),
-        if (widget.friend.socketData?.speaking ?? false)
+        if ((widget.friend.socketData?.speaking ?? false) && !widget.enabled)
           Positioned(
             top: 14,
             left: 8,
