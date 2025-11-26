@@ -6,6 +6,7 @@ import 'package:one_one/components/friend_btn.dart';
 import 'package:one_one/components/speaking_status_dot.dart';
 import 'package:one_one/core/config/logging.dart';
 import 'package:one_one/core/shared/spacing.dart';
+import 'package:one_one/models/enums.dart';
 import 'package:one_one/models/friend.dart';
 import 'package:one_one/providers/home_provider.dart';
 import 'package:provider/provider.dart';
@@ -21,6 +22,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   late final PageController centerSnapScrollController;
   bool isHolding = false;
+  CallConnectionState? callConnectionState;
 
   @override
   void initState() {
@@ -122,6 +124,48 @@ class _HomePageState extends State<HomePage> {
           ),
           Positioned.fill(
             top: null,
+            bottom: 200,
+            child: Column(
+              children: [
+                if (selectedAvatar != null)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (selectedAvatar?.socketData?.speaking ?? false) ...[
+                        SpeakingStatusDot(
+                          isSpeaking: selectedAvatar?.socketData?.speaking ?? false,
+                        ),
+                        const SizedBox(width: Spacing.s2),
+                      ],
+                      Text(
+                        selectedAvatar?.name ?? "",
+                        style: TextTheme.of(context).headlineSmall,
+                      ),
+                    ],
+                  ),
+                if (callConnectionState != null)
+                  Container(
+                    padding: const EdgeInsets.all(Spacing.s1),
+                    decoration: BoxDecoration(
+                      color: ColorScheme.of(context).secondaryContainer,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      callConnectionState == CallConnectionState.connecting
+                        ? 'Connecting...'
+                        : callConnectionState == CallConnectionState.connected
+                          ? 'Connected'
+                          : 'Call Failed',
+                      style: TextTheme.of(context).titleSmall?.copyWith(
+                        color: ColorScheme.of(context).onSecondaryContainer,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          Positioned.fill(
+            top: null,
             bottom: 50,
             child: Consumer<HomeProvider>(
               builder: (context, homeProvider, child) {
@@ -149,7 +193,7 @@ class _HomePageState extends State<HomePage> {
         return FriendBtn(
           friend: friend,
           enabled: selectedAvatar?.id == friend.id,
-          onHold: () {
+          onHold: () async {
             logger.info("Hold btn holded");
             setState(() {
               isHolding = true;
@@ -157,10 +201,13 @@ class _HomePageState extends State<HomePage> {
             final String? socketId = friend.socketData?.socketId;
             if (socketId != null) {
               logger.info("Calling ${friend.name}");
-              provider.startCall(socketId);
+              callConnectionState = CallConnectionState.connecting;
+              setState(() {});
+              callConnectionState = await provider.startCall(socketId);
+              setState(() {});
             }
           },
-          onHolding: () {
+          onHolding: () async {
             logger.info("Hold btn put to Holding");
             if (isHolding) return;
             setState(() {
@@ -169,7 +216,10 @@ class _HomePageState extends State<HomePage> {
             final String? socketId = friend.socketData?.socketId;
             if (socketId != null) {
               logger.info("Calling ${friend.name}");
-              provider.startCall(socketId);
+              callConnectionState = CallConnectionState.connecting;
+              setState(() {});
+              callConnectionState = await provider.startCall(socketId);
+              setState(() {});
             }
           },
           onRelease: () {
@@ -179,6 +229,8 @@ class _HomePageState extends State<HomePage> {
             });
             logger.info("Ending call ${friend.name}");
             provider.endCall(friend.socketData?.socketId ?? '');
+            callConnectionState = null;
+            setState(() {});
           },
         );
       }

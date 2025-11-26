@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:one_one/core/config/baseurl.dart';
 import 'package:one_one/core/config/logging.dart';
+import 'package:one_one/models/enums.dart';
 import 'package:one_one/models/friend.dart';
 import 'package:one_one/models/speaker_event.dart';
 import 'package:socket_io_client/socket_io_client.dart';
@@ -310,30 +311,49 @@ class WalkieTalkieProvider extends ChangeNotifier {
     return pc;
   }
 
-  Future<void> startCall(String peerCode) async {
-    await _ensureLocalStream();
-    final pc = await _createPeerIfNeeded(peerCode);
+  Future<CallConnectionState> startCall(String peerCode) async {
+    final completer = Completer<CallConnectionState>();
+    
+    try {
+      await _ensureLocalStream();
+      final pc = await _createPeerIfNeeded(peerCode);
 
-    // add local audio track now so the other side hears when you press mic
-    // note: addTrack returns RTCRtpSender which we store so we can remove later
-    final audioSenders = <RTCRtpSender>[];
-    for (final track in localStream!.getAudioTracks()) {
-      final sender = await pc.addTrack(track, localStream!);
-      audioSenders.add(sender);
+      // add local audio track now so the other side hears when you press mic
+      // note: addTrack returns RTCRtpSender which we store so we can remove later
+      final audioSenders = <RTCRtpSender>[];
+      for (final track in localStream!.getAudioTracks()) {
+        final sender = await pc.addTrack(track, localStream!);
+        audioSenders.add(sender);
+      }
+      _peerSenders[peerCode] = audioSenders;
+
+      final offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+      socket.emit('offer', {
+        'sdp': offer.sdp,
+        'sender': uniqueCode,
+        'receiver': peerCode,
+      });
+
+      selectedTarget = peerCode;
+      isCallActive = true;
+      
+      pc.onConnectionState = (state) {
+        logger.debug('Call to $peerCode connection state: $state');
+        if (state == RTCPeerConnectionState.RTCPeerConnectionStateConnected && !completer.isCompleted) {
+          completer.complete(CallConnectionState.connected);
+        } else if ((state == RTCPeerConnectionState.RTCPeerConnectionStateFailed ||
+                    state == RTCPeerConnectionState.RTCPeerConnectionStateClosed) && !completer.isCompleted) {
+          completer.completeError(CallConnectionState.failed);
+        }
+        notifyListeners();
+      };
+      
+      notifyListeners();
+    } catch (e) {
+      logger.error('Error starting call to $peerCode: $e');
     }
-    _peerSenders[peerCode] = audioSenders;
-
-    final offer = await pc.createOffer();
-    await pc.setLocalDescription(offer);
-    socket.emit('offer', {
-      'sdp': offer.sdp,
-      'sender': uniqueCode,
-      'receiver': peerCode,
-    });
-
-    selectedTarget = peerCode;
-    isCallActive = true;
-    notifyListeners();
+    return completer.future;
   }
 
   Future<void> answerCall(String peerCode) async {

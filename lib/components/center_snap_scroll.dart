@@ -20,10 +20,6 @@ class _CenterSnapScrollState extends State<CenterSnapScroll> {
   @override
   void initState() {
     super.initState();
-    // widget.controller = PageController(
-    //   initialPage: _currentPage,
-    //   viewportFraction: 0.3
-    // );
     widget.controller.addListener(() {
       final newPage = widget.controller.page?.round() ?? 0;
       if (newPage != _currentPage) {

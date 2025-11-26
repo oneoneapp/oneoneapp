@@ -4,3 +4,8 @@ enum FriendsFetchStatus {
   loaded,
   failure,
 }
+enum CallConnectionState {
+  connecting,
+  connected,
+  failed,
+}
