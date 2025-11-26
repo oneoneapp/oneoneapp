@@ -240,7 +240,7 @@ class PendingRequests extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final homeProvider = Provider.of<HomeProvider>(context);
-
+    
     return ListTile(
       title: Text(
         "Pending requests",
@@ -266,109 +266,85 @@ class PendingRequests extends StatelessWidget {
         showBottomSheet(
           context: context,
           builder: (context) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 10,
-                vertical: 40
-              ),
-              child: ListView(
-                children: [
-                  ListTile(
-                    leading: IconButton(
-                      icon: Icon(Icons.arrow_back),
-                      onPressed: () => Navigator.pop(context),
-                    ),
+            return Consumer<HomeProvider>(
+              builder: (context, homeProvider, child) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 40
                   ),
-                  if (homeProvider.pendingRequests.isEmpty)
-                    Padding(
-                      padding: EdgeInsets.only(
-                        top: MediaQuery.sizeOf(context).height * 0.3
-                      ),
-                      child: Center(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              "No pending requests",
-                              style: TextTheme.of(context).titleMedium,
-                            ),
-                          ],
+                  child: ListView(
+                    children: [
+                      ListTile(
+                        leading: IconButton(
+                          icon: Icon(Icons.arrow_back),
+                          onPressed: () => Navigator.pop(context),
                         ),
                       ),
-                    )
-                  else
-                  ...List.generate(
-                    homeProvider.pendingRequests.length,
-                    (index) {
-                      final friend = homeProvider.pendingRequests[index];
-                      return ListTile(
-                        leading: CircleAvatar(
-                          backgroundImage: NetworkImage(friend.photoUrl),
-                        ),
-                        title: Text(friend.name),
-                        subtitle: Text(friend.uniqueCode),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              onPressed: () async {
-                                final res = await loc<ApiService>().post(
-                                  'friend/accept-request',
-                                  body: {
-                                    "uniqueCode": friend.uniqueCode
-                                  },
-                                  authenticated: true
-                                );
-                                if (!context.mounted) return;
-                                if (res.statusCode == 200) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text("Friend request accepted"),
-                                    )
-                                  );
-                                } else {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(res.data['message'] ?? 'Failed to accept request'),
-                                    )
-                                  );
-                                }
-                              },
-                              icon: Icon(Icons.check, color: Colors.green)
+                      if (homeProvider.pendingRequests.isEmpty)
+                        Padding(
+                          padding: EdgeInsets.only(
+                            top: MediaQuery.sizeOf(context).height * 0.3
+                          ),
+                          child: Center(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  "No pending requests",
+                                  style: TextTheme.of(context).titleMedium,
+                                ),
+                              ],
                             ),
-                            IconButton(
-                              onPressed: () async {
-                                final res = await loc<ApiService>().post(
-                                  'friend/decline-request',
-                                  body: {
-                                    "uniqueCode": friend.uniqueCode
-                                  },
-                                  authenticated: true
-                                );
-                                if (!context.mounted) return;
-                                if (res.statusCode == 200) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text("Friend request rejected"),
-                                    )
-                                  );
-                                } else {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(res.data['message'] ?? 'Failed to reject request'),
-                                    )
-                                  );
-                                }
-                              },
-                              icon: Icon(Icons.close, color: Colors.red)
+                          ),
+                        )
+                      else
+                      ...List.generate(
+                        homeProvider.pendingRequests.length,
+                        (index) {
+                          final friend = homeProvider.pendingRequests[index];
+                          return ListTile(
+                            leading: CircleAvatar(
+                              backgroundImage: NetworkImage(friend.photoUrl),
                             ),
-                          ],
-                        ),
-                      );
-                    }
-                  )
-                ],
-              ),
+                            title: Text(friend.name),
+                            subtitle: Text(friend.uniqueCode),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  onPressed: () async {
+                                    final String message = await homeProvider.acceptFriendRequest(friend.uniqueCode);
+                                    if (!context.mounted) return;
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(message),
+                                      )
+                                    );
+                                  },
+                                  icon: Icon(Icons.check, color: Colors.green)
+                                ),
+                                IconButton(
+                                  onPressed: () async {
+                                    final String message = await homeProvider.declineFriendRequest(friend.uniqueCode);
+                                    if (!context.mounted) return;
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(message),
+                                      )
+                                    );
+                                  },
+                                  icon: Icon(Icons.close, color: Colors.red)
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+                      )
+                    ],
+                  ),
+                );
+              }
             );
           }
         );

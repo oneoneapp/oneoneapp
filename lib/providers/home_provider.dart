@@ -109,6 +109,45 @@ class HomeProvider extends ChangeNotifier {
     }
   }
 
+  Future<String> acceptFriendRequest(String uniqueCode) async {
+    try {
+      final res = await loc<ApiService>().post(
+        'friend/accept-request',
+        body: {
+          "uniqueCode": uniqueCode
+        },
+        authenticated: true
+      );
+      final index = _pendingRequests.indexByUniqueCode(uniqueCode);
+      final friend = _pendingRequests.removeAt(index);
+      _friends.add(friend);
+      notifyListeners();
+      if (res.statusCode == 200) return "Friend request accepted";
+      return res.data['message'] ?? "";
+    } catch (e) {
+      return "Failed to accept request";
+    }
+  }
+
+  Future<String> declineFriendRequest(String uniqueCode) async {
+    try {
+      final res = await loc<ApiService>().post(
+        'friend/decline-request',
+        body: {
+          "uniqueCode": uniqueCode
+        },
+        authenticated: true
+      );
+      final index = _pendingRequests.indexByUniqueCode(uniqueCode);
+      _pendingRequests.removeAt(index);
+      notifyListeners();
+      if (res.statusCode == 200) return "Friend request declined";
+      return res.data['message'] ?? "";
+    } catch (e) {
+      return "Failed to decline request";
+    }
+  }
+
   @override
   void dispose() {
     for (final sub in subs) {
