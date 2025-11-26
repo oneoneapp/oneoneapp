@@ -203,7 +203,6 @@ class _FriendBtnState extends State<FriendBtn> {
                 borderRadius: BorderRadius.circular(Spacing.s2),
               ),
               child: SpeakingStatusDot(
-                activeColor: ColorScheme.of(context).onPrimary,
                 size: 12
               ),
             ),

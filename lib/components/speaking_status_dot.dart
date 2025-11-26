@@ -1,11 +1,11 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:one_one/core/shared/spacing.dart';
 
 class SpeakingStatusDot extends StatefulWidget {
   final bool isSpeaking;
   final double size;
   final EdgeInsets? margin;
-  final Color? activeColor;
   final bool animateWhenInactive;
   final Duration? duration;
 
@@ -14,7 +14,6 @@ class SpeakingStatusDot extends StatefulWidget {
     this.isSpeaking = true,
     this.size = 12.0,
     this.margin,
-    this.activeColor,
     this.animateWhenInactive = false,
     this.duration,
   });
@@ -106,7 +105,7 @@ class _SpeakingStatusDotState extends State<SpeakingStatusDot>
     super.dispose();
   }
 
-  Color get color => widget.activeColor ?? Theme.of(context).colorScheme.primary;
+  Color get color => Theme.of(context).colorScheme.onPrimary;
 
   @override
   Widget build(BuildContext context) {
@@ -116,6 +115,11 @@ class _SpeakingStatusDotState extends State<SpeakingStatusDot>
 
     return Container(
       margin: widget.margin,
+      padding: const EdgeInsets.all(Spacing.s1),
+      decoration: BoxDecoration(
+        color: ColorScheme.of(context).primary,
+        borderRadius: BorderRadius.circular(Spacing.s2),
+      ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.center,
