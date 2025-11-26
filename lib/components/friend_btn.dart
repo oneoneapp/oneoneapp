@@ -75,12 +75,6 @@ class _FriendBtnState extends State<FriendBtn> {
     }
   }
 
-  void onTapCancel() {
-    logger.debug("[hold btn] Tap Cancelled");
-    if (!widget.enabled) return;
-    release();
-  }
-
   void onPanUpdate(DragUpdateDetails details) {
     if (!widget.enabled) return;
     logger.debug("[hold btn] Pan update");
@@ -148,7 +142,6 @@ class _FriendBtnState extends State<FriendBtn> {
             onTapDown: onTapDown,
             onPanUpdate: onPanUpdate,
             onTapUp: onTapUp,
-            onTapCancel: onTapCancel,
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               curve: Curves.easeInBack,
