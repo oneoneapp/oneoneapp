@@ -67,7 +67,7 @@ class _HomePageState extends State<HomePage> {
       body: Stack(
         children: [
           BgContainer(
-            isShaking: isHolding,
+            isShaking: isHolding && callConnectionState == CallConnectionState.connecting,
             displayMargin: isHolding,
             imageUrl: selectedAvatar?.photoUrl,
           ),
@@ -187,7 +187,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<void> startCall(String uniqueCode, HomeProvider homeProvider, WalkieTalkieProvider provider) async {
-    final Friend friend = homeProvider.friends.getByUniqueCode(uniqueCode)!;
+    Friend friend = homeProvider.friends.getByUniqueCode(uniqueCode)!;
     setState(() {
       isHolding = true;
     });
@@ -215,7 +215,7 @@ class _HomePageState extends State<HomePage> {
         while (homeProvider.friends.getByUniqueCode(uniqueCode)?.socketData?.socketId == null) {
           await Future.delayed(const Duration(milliseconds: 50));
         }
-        final Friend friend = homeProvider.friends.getByUniqueCode(uniqueCode)!;
+        friend = homeProvider.friends.getByUniqueCode(uniqueCode)!;
         
         if (friend.socketData?.socketId != null) {
           callConnectionState = await provider.startCall(friend.socketData!.socketId!);
