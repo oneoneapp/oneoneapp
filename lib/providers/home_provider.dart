@@ -118,12 +118,13 @@ class HomeProvider extends ChangeNotifier {
         },
         authenticated: true
       );
+      if (res.statusCode != 200) return res.data['message'] ?? "";
+      walkieTalkieProvider.updateFriendsSocketData();
       final index = _pendingRequests.indexByUniqueCode(uniqueCode);
       final friend = _pendingRequests.removeAt(index);
       _friends.add(friend);
       notifyListeners();
-      if (res.statusCode == 200) return "Friend request accepted";
-      return res.data['message'] ?? "";
+      return "Friend request accepted";
     } catch (e) {
       return "Failed to accept request";
     }
@@ -138,11 +139,11 @@ class HomeProvider extends ChangeNotifier {
         },
         authenticated: true
       );
+      if (res.statusCode != 200) return res.data['message'] ?? "";
       final index = _pendingRequests.indexByUniqueCode(uniqueCode);
       _pendingRequests.removeAt(index);
       notifyListeners();
-      if (res.statusCode == 200) return "Friend request declined";
-      return res.data['message'] ?? "";
+      return "Friend request declined";
     } catch (e) {
       return "Failed to decline request";
     }
