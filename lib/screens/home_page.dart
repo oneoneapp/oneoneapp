@@ -4,11 +4,13 @@ import 'package:one_one/components/bg_container.dart';
 import 'package:one_one/components/center_snap_scroll.dart';
 import 'package:one_one/components/friend_btn.dart';
 import 'package:one_one/components/speaking_status_dot.dart';
+import 'package:one_one/core/config/locator.dart';
 import 'package:one_one/core/config/logging.dart';
 import 'package:one_one/core/shared/spacing.dart';
 import 'package:one_one/models/enums.dart';
 import 'package:one_one/models/friend.dart';
 import 'package:one_one/providers/home_provider.dart';
+import 'package:one_one/services/user_service.dart';
 import 'package:provider/provider.dart';
 import '../providers/walkie_talkie_provider.dart';
 
@@ -184,6 +186,45 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  Future<void> startCall(String uniqueCode, HomeProvider homeProvider, WalkieTalkieProvider provider) async {
+    final Friend friend = homeProvider.friends.getByUniqueCode(uniqueCode)!;
+    setState(() {
+      isHolding = true;
+    });
+    final String? socketId = friend.socketData?.socketId;
+    if (socketId != null) {
+      logger.info("Calling ${friend.name}");
+      callConnectionState = CallConnectionState.connecting;
+      setState(() {});
+      callConnectionState = await provider.startCall(socketId);
+      setState(() {});
+    } else {
+      callConnectionState = CallConnectionState.connecting;
+      setState(() {});
+      final res = await loc<ApiService>().post(
+        "fcm/wakeup-friend",
+        authenticated: true,
+        body: {
+          "friendUniqueCode": friend.uniqueCode, 
+          "title": "Pick up the phone bitch!",
+          "body" : "${(await UserService.getLocalUserData())?["name"]} is calling"
+        }
+      );
+      
+      if (res.statusCode == 200) {
+        while (homeProvider.friends.getByUniqueCode(uniqueCode)?.socketData?.socketId == null) {
+          await Future.delayed(const Duration(milliseconds: 50));
+        }
+        final Friend friend = homeProvider.friends.getByUniqueCode(uniqueCode)!;
+        
+        if (friend.socketData?.socketId != null) {
+          callConnectionState = await provider.startCall(friend.socketData!.socketId!);
+          setState(() {});
+        }
+      }
+    }
+  }
+
   List<Widget> frndsAvatars(HomeProvider homeProvider, WalkieTalkieProvider provider) {
     return List.generate(
       homeProvider.friends.length,
@@ -195,32 +236,12 @@ class _HomePageState extends State<HomePage> {
           enabled: selectedAvatar?.id == friend.id,
           onHold: () async {
             logger.info("Hold btn holded");
-            setState(() {
-              isHolding = true;
-            });
-            final String? socketId = friend.socketData?.socketId;
-            if (socketId != null) {
-              logger.info("Calling ${friend.name}");
-              callConnectionState = CallConnectionState.connecting;
-              setState(() {});
-              callConnectionState = await provider.startCall(socketId);
-              setState(() {});
-            }
+            startCall(friend.uniqueCode, homeProvider, provider);
           },
           onHolding: () async {
             logger.info("Hold btn put to Holding");
             if (isHolding) return;
-            setState(() {
-              isHolding = true;
-            });
-            final String? socketId = friend.socketData?.socketId;
-            if (socketId != null) {
-              logger.info("Calling ${friend.name}");
-              callConnectionState = CallConnectionState.connecting;
-              setState(() {});
-              callConnectionState = await provider.startCall(socketId);
-              setState(() {});
-            }
+            startCall(friend.uniqueCode, homeProvider, provider);
           },
           onRelease: () {
             logger.info("Hold btn Released");
