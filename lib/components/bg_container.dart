@@ -95,6 +95,9 @@ class _BgContainerState extends State<BgContainer> with SingleTickerProviderStat
               Image.network(
                 widget.imageUrl!,
                 fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return const SizedBox.shrink();
+                },
               ),
             BackdropFilter(
               filter: ImageFilter.blur(
