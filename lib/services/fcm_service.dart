@@ -52,6 +52,17 @@ class FcmService {
       });
       FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
+      FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
+        logger.info('FCM Token Refreshed: $newToken');
+        _fcmToken = newToken;
+        loc<ApiService>().post(
+          "user/fcm-token",
+          body: {
+            "fcmToken": newToken
+          },
+        );
+      });
+
       final token = await FirebaseMessaging.instance.getToken();
       _fcmToken = token;
       logger.debug("FCM Token: $_fcmToken");
