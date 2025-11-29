@@ -11,7 +11,7 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   if (message.data["type"] == "call") {
     logger.info("Background message for walkie talkie call received");
     ForegroundService.initService();
-    final ServiceRequestResult result = await ForegroundService.startService(message.data["name"]);
+    final ServiceRequestResult result = await ForegroundService.startService();
     if (result is ServiceRequestSuccess) {
       logger.info("Foreground service started successfully from background message");
     } else {

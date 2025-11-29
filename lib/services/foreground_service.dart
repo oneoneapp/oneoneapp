@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/widgets.dart';
@@ -22,7 +23,7 @@ class ForegroundService {
         playSound: false,
       ),
       foregroundTaskOptions: ForegroundTaskOptions(
-        eventAction: ForegroundTaskEventAction.repeat(2),
+        eventAction: ForegroundTaskEventAction.repeat(10000),
         allowWakeLock: true,
       ),
     );
@@ -34,25 +35,21 @@ class ForegroundService {
 
   static Future<void> requestPermissions() async {
     // Android 13+, you need to allow notification permission to display foreground service notification.
-    // iOS: If you need notification, ask for permission.
-    final NotificationPermission notificationPermission =
-        await FlutterForegroundTask.checkNotificationPermission();
+    final NotificationPermission notificationPermission = await FlutterForegroundTask.checkNotificationPermission();
     if (notificationPermission != NotificationPermission.granted) {
       await FlutterForegroundTask.requestNotificationPermission();
     }
 
     if (Platform.isAndroid) {
       // Android 12+, there are restrictions on starting a foreground service.
-      // To restart the service on device reboot or unexpected problem, you need to allow below permission.
-      if (!await FlutterForegroundTask.isIgnoringBatteryOptimizations) {
-        // This function requires `android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` permission.
+      if (!(await FlutterForegroundTask.isIgnoringBatteryOptimizations)) {
         await FlutterForegroundTask.requestIgnoreBatteryOptimization();
         await FlutterForegroundTask.openIgnoreBatteryOptimizationSettings();
       }
     }
   }
 
-  static Future<ServiceRequestResult> startService(String name) async {
+  static Future<ServiceRequestResult> startService() async {
     if (await FlutterForegroundTask.isRunningService) {
       return FlutterForegroundTask.stopService();
     }
@@ -62,7 +59,7 @@ class ForegroundService {
         ForegroundServiceTypes.microphone,
       ],
       serviceId: 256,
-      notificationTitle: '$name wants to talk',
+      notificationTitle: 'One One',
       notificationText: '',
       notificationButtons: [
         NotificationButton(id: 'stop', text: 'stop'),
@@ -76,8 +73,12 @@ class ForegroundService {
     FlutterForegroundTask.sendDataToTask(data);
   }
 
-  static Future<ServiceRequestResult> stopService() async {
-    return FlutterForegroundTask.stopService();
+  static Future<ServiceRequestResult?> stopService() async {
+    if (await FlutterForegroundTask.isRunningService) {
+      return FlutterForegroundTask.stopService();
+    } else {
+      return null;
+    }
   }
 }
 
@@ -88,7 +89,8 @@ void startCallback() {
 
 class WalkieTalkieTaskHandler extends TaskHandler {
   late WalkieTalkieProvider walkieTalkieProvider;
-  String? callerSocketId;
+  late Timer? selfDestructTimer;
+  static const Duration selfDestructDuration = Duration(minutes: 1);
 
   @pragma('vm:entry-point')
   @override
@@ -101,38 +103,34 @@ class WalkieTalkieTaskHandler extends TaskHandler {
     walkieTalkieProvider = WalkieTalkieProvider();
     await walkieTalkieProvider.initialize();
     logger.info('WalkieTalkieProvider initialized in foreground service');
+    selfDestructTimer = Timer(selfDestructDuration, () async {
+      logger.info('Self-destruct timer triggered. Stopping foreground service. initial');
+      await FlutterForegroundTask.stopService();
+    });
+    walkieTalkieProvider.userSpeakingStream.listen((event) {
+      if (event.speaking) {
+        selfDestructTimer?.cancel();
+        selfDestructTimer = null;
+        logger.info('User started speaking. Self-destruct timer cancelled.');
+      } else if (!event.speaking) {
+        selfDestructTimer?.cancel();
+        selfDestructTimer = Timer(selfDestructDuration, () async {
+          logger.info('Self-destruct timer triggered after user stopped speaking. Stopping foreground service.');
+          await FlutterForegroundTask.stopService();
+        });
+        logger.info('User stopped speaking. Self-destruct timer started.');
+      }
+    });
   }
 
   @override
   void onReceiveData(Object data) {
     logger.debug('onReceiveData: $data');
-    if (data is Map<String, dynamic>) {
-      if (data["type"] == 'call') {
-        callerSocketId = data['sender'];
-        logger.debug('Incoming call from $callerSocketId');
-        // walkieTalkieProvider.startCall(sender, audio: false);
-      }
-    }
   }
 
   @pragma('vm:entry-point')
   @override
-  void onRepeatEvent(DateTime timestamp) {
-    if (callerSocketId != null) {
-      if (walkieTalkieProvider.isCallActive) {
-        return;
-      } else {
-        if (walkieTalkieProvider.isConnected && walkieTalkieProvider.uniqueCode != '') {
-          logger.info('Starting call with $callerSocketId from foreground service');
-          walkieTalkieProvider.startCall(callerSocketId!);
-        } else {
-          logger.info('Socket not connected yet, cannot start call');
-        }
-      }
-    } else {
-      logger.info('No active call');
-    }
-  }
+  void onRepeatEvent(DateTime timestamp) {}
 
   @override
   void onNotificationButtonPressed(String id) {
@@ -145,6 +143,7 @@ class WalkieTalkieTaskHandler extends TaskHandler {
   @pragma('vm:entry-point')
   @override
   Future<void> onDestroy(DateTime timestamp, bool isForeground) async {
+    selfDestructTimer?.cancel();
     walkieTalkieProvider.dispose();
     logger.info('Foreground service destroyed');
   }

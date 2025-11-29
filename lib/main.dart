@@ -15,6 +15,7 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  await ForegroundService.stopService();
   await setupLocator();
   runApp(
     OneOneApp()
@@ -32,8 +33,8 @@ class _OneOneAppState extends State<OneOneApp> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ForegroundService.requestPermissions();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await ForegroundService.requestPermissions();
       ForegroundService.initService();
     });
   }
