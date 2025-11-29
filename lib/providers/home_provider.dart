@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:one_one/core/config/locator.dart';
 import 'package:one_one/core/config/logging.dart';
@@ -6,6 +7,7 @@ import 'package:one_one/models/enums.dart';
 import 'package:one_one/models/friend.dart';
 import 'package:one_one/models/speaker_event.dart';
 import 'package:one_one/providers/walkie_talkie_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HomeProvider extends ChangeNotifier {
   final WalkieTalkieProvider walkieTalkieProvider;
@@ -69,12 +71,45 @@ class HomeProvider extends ChangeNotifier {
   final List<Friend> _friends = [];
   final List<Friend> _pendingRequests = [];
 
+  static const String _friendsCacheKey = 'friends_list_cache';
+
   List<Friend> get friends => _friends;
   List<Friend> get pendingRequests => _pendingRequests;
 
   void fetchFrndsList() async {
     friendsFetchStatus = FriendsFetchStatus.loading;
     notifyListeners();
+
+    final prefs = await SharedPreferences.getInstance();
+    bool hadCache = false;
+
+    // Try to load cached friends list first and update UI immediately
+    try {
+      final cached = prefs.getString(_friendsCacheKey);
+      if (cached != null && cached.isNotEmpty) {
+        final Map<String, dynamic> data = json.decode(cached);
+        _friends.clear();
+        _pendingRequests.clear();
+        if (data['friends'] is List) {
+          for (final friend in data['friends']) {
+            _friends.add(Friend.fromMap(Map<String, dynamic>.from(friend)));
+          }
+        }
+        if (data['pendingRequests'] is List) {
+          for (final friend in data['pendingRequests']) {
+            _pendingRequests.add(Friend.fromMap(Map<String, dynamic>.from(friend)));
+          }
+        }
+        friendsFetchStatus = FriendsFetchStatus.loaded;
+        notifyListeners();
+        walkieTalkieProvider.updateFriendsSocketData();
+        hadCache = true;
+      }
+    } catch (e) {
+      logger.error("Error reading cached friends list: $e");
+    }
+
+    // fetch the latest list from the server, cache it and update UI
     try {
       final res = await loc<ApiService>().get(
         "friend/list",
@@ -89,13 +124,33 @@ class HomeProvider extends ChangeNotifier {
         for (final friend in res.data["pendingRequests"]) {
           _pendingRequests.add(Friend.fromMap(friend));
         }
+
+        // Cache the fresh response
+        try {
+          final cacheObj = {
+            'friends': res.data['friends'],
+            'pendingRequests': res.data['pendingRequests'],
+            'cachedAt': DateTime.now().toIso8601String(),
+          };
+          await prefs.setString(_friendsCacheKey, json.encode(cacheObj));
+        } catch (e) {
+          logger.error("Error caching friends list: $e");
+        }
+
+        friendsFetchStatus = FriendsFetchStatus.loaded;
+        notifyListeners();
+        walkieTalkieProvider.updateFriendsSocketData();
+      } else {
+        if (!hadCache) {
+          friendsFetchStatus = FriendsFetchStatus.failure;
+          notifyListeners();
+        }
       }
-      friendsFetchStatus = FriendsFetchStatus.loaded;
-      notifyListeners();
-      walkieTalkieProvider.updateFriendsSocketData();
     } catch (e) {
-      friendsFetchStatus = FriendsFetchStatus.failure;
-      notifyListeners();
+      if (!hadCache) {
+        friendsFetchStatus = FriendsFetchStatus.failure;
+        notifyListeners();
+      }
       logger.error("Error fetching friends list: $e");
     }
   }
