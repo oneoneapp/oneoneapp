@@ -106,42 +106,6 @@ class _FriendBtnState extends State<FriendBtn> {
       clipBehavior: Clip.none,
       alignment: Alignment.center,
       children: [
-        if (_holdLocked)
-          Positioned(
-            bottom: 110,
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 6
-              ),
-              decoration: BoxDecoration(
-                color: ColorScheme.of(context).surfaceBright,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.2),
-                    blurRadius: 10,
-                    offset: const Offset(0, 5),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.lock,
-                    size: 16,
-                    color: ColorScheme.of(context).onSurfaceVariant
-                  ),
-                  const SizedBox(width: Spacing.s1),
-                  Text(
-                    'Holding',
-                    style: TextTheme.of(context).labelMedium
-                  ),
-                ],
-              )
-            )
-          ),
         Container(
           alignment: Alignment.center,
           child: GestureDetector(
@@ -206,6 +170,32 @@ class _FriendBtnState extends State<FriendBtn> {
                 size: 12
               ),
             ),
+          ),
+        if (_holdLocked)
+          Positioned(
+            bottom: 80,
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 6
+              ),
+              decoration: BoxDecoration(
+                color: ColorScheme.of(context).surfaceBright,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 10,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: Icon(
+                Icons.lock,
+                size: 16,
+                color: ColorScheme.of(context).onSurfaceVariant
+              ),
+            )
           ),
       ],
     );
