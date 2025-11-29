@@ -5,7 +5,6 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'package:one_one/core/config/locator.dart';
 import 'package:one_one/core/config/logging.dart';
 import 'package:one_one/providers/home_provider.dart';
-import 'package:one_one/services/api_service.dart';
 import 'package:one_one/services/fcm_service.dart';
 import 'package:one_one/services/user_service.dart';
 
