@@ -25,6 +25,7 @@ class _HomePageState extends State<HomePage> {
   late final PageController centerSnapScrollController;
   bool isHolding = false;
   CallConnectionState? callConnectionState;
+  bool _scrolledToInitial = false;
 
   @override
   void initState() {
@@ -174,6 +175,23 @@ class _HomePageState extends State<HomePage> {
             bottom: 50,
             child: Consumer<HomeProvider>(
               builder: (context, homeProvider, child) {
+                if (!_scrolledToInitial && homeProvider.friends.isNotEmpty && centerSnapScrollController.hasClients) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (!mounted) return;
+                    try {
+                      centerSnapScrollController.animateToPage(
+                        1,
+                        duration: const Duration(milliseconds: 300),
+                        curve: Curves.easeOut,
+                      );
+                    } catch (_) {
+                      centerSnapScrollController.jumpToPage(1);
+                    }
+                    setState(() {
+                      _scrolledToInitial = true;
+                    });
+                  });
+                }
                 return CenterSnapScroll(
                   controller: centerSnapScrollController,
                   children: [
