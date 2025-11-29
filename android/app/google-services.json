@@ -14,11 +14,27 @@
       },
       "oauth_client": [
         {
+          "client_id": "372494251881-9o2vpsas7b9ieonbr7ek6ph25umuma0c.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.oneone.app",
+            "certificate_hash": "cb89cbb1a76f146d077f0a12825a3c4d40c56dac"
+          }
+        },
+        {
           "client_id": "372494251881-dekm0ari0d01uvqm48fifam7f1pu6dne.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.oneone.app",
             "certificate_hash": "b605f53b6aa1e34e03da9fc7a844dedb5c8c83a7"
+          }
+        },
+        {
+          "client_id": "372494251881-q29fj1sb31b3jmn12h7btur1gvan3pqf.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.oneone.app",
+            "certificate_hash": "55b8fd8bc39592eeb3e6901ba5e19b452babf88d"
           }
         },
         {
