@@ -434,12 +434,14 @@ class _AddFriendButtonState extends State<AddFriendButton> {
                               content: Text("Request sent successfully"),
                             )
                           );
-                          final targetFrnd = Friend.fromMap(res.data['targetFriend']);
+                          final targetFrnd = Friend.fromMap(res.data['targetUser']);
                           showDialog(
                             context: context,
                             builder: (context) {
                               return AlertDialog(
-                                title: Text("Friend Request Sent"),
+                                title: Text(
+                                  "Friend Request Sent",
+                                ),
                                 content: ListTile(
                                   leading: CircleAvatar(
                                     backgroundImage: NetworkImage(targetFrnd.photoUrl),
