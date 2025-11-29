@@ -2,7 +2,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:one_one/core/config/locator.dart';
 import 'package:one_one/core/config/logging.dart';
+import 'package:one_one/providers/home_provider.dart';
 import 'package:one_one/services/api_service.dart';
 import 'package:one_one/services/fcm_service.dart';
 import 'package:one_one/services/user_service.dart';
@@ -230,6 +232,7 @@ class AuthService {
       await _googleSignIn.signOut();
       await _auth.signOut();
       UserService.clearLocalUserData();
+      loc<HomeProvider>().reset();
       logger.info("User signed out successfully");
     } catch (e) {
       logger.error("Error signing out: $e");

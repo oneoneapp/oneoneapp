@@ -14,14 +14,15 @@ class HomeProvider extends ChangeNotifier {
   HomeProvider({
     required this.walkieTalkieProvider,
   }) {
-    init();
+    friendsFetchStatus = FriendsFetchStatus.idle;
   }
 
   late List subs = [];
 
-  void init() {
-    friendsFetchStatus = FriendsFetchStatus.idle;
+  Future<void> init() async {
+    if (friendsFetchStatus != FriendsFetchStatus.idle) return;
     fetchFrndsList();
+    await walkieTalkieProvider.initialize();
     subs = [
       walkieTalkieProvider.userPresenceStream.listen(_userPresenceListener),
       walkieTalkieProvider.userSpeakingStream.listen(_userSpeakingListener)
@@ -152,11 +153,19 @@ class HomeProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  @override
-  void dispose() {
+  void reset() {
     for (final sub in subs) {
       sub.cancel();
     }
+    _friends.clear();
+    _pendingRequests.clear();
+    friendsFetchStatus = FriendsFetchStatus.idle;
+    walkieTalkieProvider.reset();
+  }
+
+  @override
+  void dispose() {
+    reset();
     super.dispose();
   }
 }

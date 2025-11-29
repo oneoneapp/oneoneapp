@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:one_one/core/config/locator.dart';
-import 'package:one_one/core/config/logging.dart';
 import 'package:one_one/models/friend.dart';
 import 'package:one_one/providers/home_provider.dart';
-import 'package:one_one/services/fcm_service.dart';
 import 'package:one_one/services/user_service.dart';
 import 'package:one_one/components/online_status_dot.dart';
 import 'package:provider/provider.dart';
@@ -131,10 +129,6 @@ class SettingsBtn extends StatelessWidget {
                   IconButton(
                     icon: Icon(Icons.logout),
                     onPressed: () => loc<AuthService>().signOut(),
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.bug_report),
-                    onPressed: () async => logger.debug(await loc<FcmService>().getFcmToken()),
                   ),
                 ],
               ),

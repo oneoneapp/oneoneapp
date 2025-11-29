@@ -472,6 +472,24 @@ class WalkieTalkieProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void reset() {
+    endAllCalls();
+    try {
+      localStream?.dispose();
+      localStream = null;
+
+      _audioMonitorTimer?.cancel();
+      _userSpeaking.close();
+      _audioMonitorTimer = null;
+      _lastBytesReceived.clear();
+      _speaking.clear();
+
+      _userPresenceController.close();
+      socket.disconnect();
+      socket.destroy();
+    } catch (_) {}
+  }
+
   @override
   void dispose() {
     endAllCalls();

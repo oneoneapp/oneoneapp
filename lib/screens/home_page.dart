@@ -28,6 +28,9 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void initState() {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await loc<HomeProvider>().init();
+    });
     centerSnapScrollController = PageController(
       initialPage: 1,
       viewportFraction: 0.3

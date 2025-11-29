@@ -17,6 +17,5 @@ Future<void> setupLocator() async {
   loc.registerSingleton<AuthService>(AuthService(apiService: loc(), fcmService: loc()));
   loc<AuthService>().init();
   loc.registerSingleton(WalkieTalkieProvider());
-  await loc<WalkieTalkieProvider>().initialize();
   loc.registerSingleton(HomeProvider(walkieTalkieProvider: loc()));
 }
