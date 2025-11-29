@@ -24,23 +24,13 @@ class HomeProvider extends ChangeNotifier {
     fetchFrndsList();
     subs = [
       walkieTalkieProvider.userPresenceStream.listen(_userPresenceListener),
-      walkieTalkieProvider.userSpeakingStream.listen(_userSpeakingListener),
-      Timer.periodic(Duration(seconds: 2), (_) {
-        if (friendsFetchStatus == FriendsFetchStatus.loaded && _userPresenceQueue.isNotEmpty) {
-          logger.debug("Processing user presence queue with ${_userPresenceQueue.length} items.");
-          while (_userPresenceQueue.isNotEmpty) {
-            final socketData = _userPresenceQueue.removeAt(0);
-            _userPresenceListener(socketData);
-          }
-        }
-      })
+      walkieTalkieProvider.userSpeakingStream.listen(_userSpeakingListener)
     ];
   }
 
   void _userPresenceListener(SocketData socketData) {
     if (friendsFetchStatus != FriendsFetchStatus.loaded) {
-      logger.debug("Friends list not loaded yet. Moving user presence update to queue.");
-      _userPresenceQueue.add(socketData);
+      logger.error("Friends list not loaded yet");
       return;
     }
     if (_friends.containsUniqueCode(socketData.uniqueCode)) {
@@ -75,7 +65,6 @@ class HomeProvider extends ChangeNotifier {
     }
   }
 
-  final List<SocketData> _userPresenceQueue = [];
   final List<Friend> _friends = [];
   final List<Friend> _pendingRequests = [];
 
@@ -102,6 +91,7 @@ class HomeProvider extends ChangeNotifier {
       }
       friendsFetchStatus = FriendsFetchStatus.loaded;
       notifyListeners();
+      walkieTalkieProvider.updateFriendsSocketData();
     } catch (e) {
       friendsFetchStatus = FriendsFetchStatus.failure;
       notifyListeners();
@@ -147,6 +137,19 @@ class HomeProvider extends ChangeNotifier {
     } catch (e) {
       return "Failed to decline request";
     }
+  }
+
+  void updateFriendRequestsFromNotification(Map data) {
+    if (_pendingRequests.containsUniqueCode(data["uniqueCode"])) return;
+    _pendingRequests.add(Friend.fromMap(data));
+    notifyListeners();
+  }
+
+  void updateFriendsFromNotification(Map data) {
+    if (friends.containsUniqueCode(data["uniqueCode"])) return;
+    _friends.add(Friend.fromMap(data));
+    walkieTalkieProvider.updateFriendsSocketData();
+    notifyListeners();
   }
 
   @override

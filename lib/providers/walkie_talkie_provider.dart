@@ -312,6 +312,7 @@ class WalkieTalkieProvider extends ChangeNotifier {
   }
 
   void updateFriendsSocketData() {
+    if (!isConnected) return;
     final String firebaseUid = FirebaseAuth.instance.currentUser?.uid ?? '';
     socket.emit('get-friends-list', {
       'uid': firebaseUid,

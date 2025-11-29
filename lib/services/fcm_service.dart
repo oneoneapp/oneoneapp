@@ -1,18 +1,30 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:one_one/core/config/locator.dart';
 import 'package:one_one/core/config/logging.dart';
+import 'package:one_one/providers/home_provider.dart';
 import 'package:one_one/services/foreground_service.dart';
 
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   logger.info("Handling a background message: ${message.messageId}");
   logger.debug(message.data.toString());
-  ForegroundService.initService();
-  final ServiceRequestResult result = await ForegroundService.startService(message.data["name"]);
-  if (result is ServiceRequestSuccess) {
-    logger.info("Foreground service started successfully from background message");
-    ForegroundService.sendData(message.data);
-  } else {
-    logger.error("Failed to start foreground service from background message: $result");
+  if (message.data["type"] == "call") {
+    logger.info("Background message for walkie talkie call received");
+    ForegroundService.initService();
+    final ServiceRequestResult result = await ForegroundService.startService(message.data["name"]);
+    if (result is ServiceRequestSuccess) {
+      logger.info("Foreground service started successfully from background message");
+    } else {
+      logger.error("Failed to start foreground service from background message: $result");
+    }
+    return;
+  } else if (message.data["type"] == "FRIEND_REQUEST") {
+    logger.info("Background message for friend request received. Updating friend requests from notification");
+    loc<HomeProvider>().updateFriendRequestsFromNotification(message.data);
+    return;
+  } else if (message.data["type"] == "FRIEND_REQUEST_ACCEPTED") {
+    logger.info("Background message for frnd request accepted. Updating frnds list from notification");
+    loc<HomeProvider>().updateFriendsFromNotification(message.data);
   }
 }
 
@@ -24,12 +36,19 @@ class FcmService {
       await FirebaseMessaging.instance.requestPermission();
 
       FirebaseMessaging.onMessage.listen((message) async {
-        logger.info("Foreground message: ${message.data}");
-        logger.debug(message);
+        logger.info("Foreground message recieved");
+        logger.debug("Message payload: ${message.data}");
+        if (message.data["type"] == "FRIEND_REQUEST") {
+          logger.info("Recieved frnd request. Updating frnd requests from notification");
+          loc<HomeProvider>().updateFriendRequestsFromNotification(message.data);
+        } else if (message.data["type"] == "FRIEND_REQUEST_ACCEPTED") {
+          logger.info("Frnd request accepted. Updating frnds list from notification");
+          loc<HomeProvider>().updateFriendsFromNotification(message.data);
+        }
       });
       FirebaseMessaging.onMessageOpenedApp.listen((message) async {
         logger.info("Message opened from background");
-        logger.debug(message);
+        logger.debug("Message payload: ${message.data}");
       });
       FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
