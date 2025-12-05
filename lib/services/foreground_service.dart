@@ -17,6 +17,7 @@ class ForegroundService {
         channelDescription: 'Handles background operations',
         channelImportance: NotificationChannelImportance.HIGH,
         priority: NotificationPriority.HIGH,
+        enableVibration: true,
       ),
       iosNotificationOptions: const IOSNotificationOptions(
         showNotification: false,
@@ -44,6 +45,8 @@ class ForegroundService {
       // Android 12+, there are restrictions on starting a foreground service.
       if (!(await FlutterForegroundTask.isIgnoringBatteryOptimizations)) {
         await FlutterForegroundTask.requestIgnoreBatteryOptimization();
+      }
+      if (!(await FlutterForegroundTask.isIgnoringBatteryOptimizations)) {
         await FlutterForegroundTask.openIgnoreBatteryOptimizationSettings();
       }
     }
@@ -56,7 +59,6 @@ class ForegroundService {
     return FlutterForegroundTask.startService(
       serviceTypes: [
         ForegroundServiceTypes.mediaPlayback,
-        ForegroundServiceTypes.microphone,
       ],
       serviceId: 256,
       notificationTitle: 'One One',

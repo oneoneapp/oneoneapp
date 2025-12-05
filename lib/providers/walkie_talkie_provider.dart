@@ -35,6 +35,7 @@ class WalkieTalkieProvider extends ChangeNotifier {
   // current speaking state per peer
   final Map<String, bool> _speaking = {};
 
+  bool noMic = false;
   bool isCallActive = false;
   bool isConnected = false;
   String? selectedTarget;
@@ -131,11 +132,7 @@ class WalkieTalkieProvider extends ChangeNotifier {
       final receiver = data['receiver'] as String;
       if (receiver != uniqueCode) return;
 
-      // ensure local stream exists
-      await _ensureLocalStream();
-      // create or reuse peer for sender
       final pc = await _createPeerIfNeeded(sender);
-      // set remote description and answer
       await pc.setRemoteDescription(RTCSessionDescription(data['sdp'], 'offer'));
 
       final answer = await pc.createAnswer();
@@ -363,20 +360,6 @@ class WalkieTalkieProvider extends ChangeNotifier {
       logger.error('Error starting call to $peerCode: $e');
     }
     return completer.future;
-  }
-
-  Future<void> answerCall(String peerCode) async {
-    await _ensureLocalStream();
-    final pc = await _createPeerIfNeeded(peerCode);
-    final answer = await pc.createAnswer();
-    await pc.setLocalDescription(answer);
-    socket.emit('answer', {
-      'sdp': answer.sdp,
-      'sender': uniqueCode,
-      'receiver': peerCode,
-    });
-    isCallActive = true;
-    notifyListeners();
   }
 
   Future<void> attachMicrophoneTo(String targetCode) async {
